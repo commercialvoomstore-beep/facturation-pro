@@ -11,6 +11,16 @@ Application de facturation proforma autonome, sans serveur et utilisable en ouvr
 
 Le logo de l'interface, les logos de factures et les bibliothèques nécessaires à l'import des fichiers `.xlsx` sont intégrés au fichier HTML. Certains formats anciens (`.xls`, `.xlsb`) peuvent demander l'ouverture du fichier HTML directement dans le navigateur si l'aperçu bloque le lecteur complémentaire.
 
+## Authentification (Supabase)
+
+L'application s'ouvre sur un écran **Connexion / Inscription** : personne n'entre dans la plateforme sans compte. Après connexion, l'en-tête affiche « Bonjour *nom* » et un bouton **Déconnexion**.
+
+- Projet Supabase : `facturation-proforma` (projectID `qugokmusdjleoheuvsvo`), URL `https://qugokmusdjleoheuvsvo.supabase.co`.
+- Collez la clé **« anon public »** (tableau de bord Supabase → *Settings → API*) dans la constante `SUPABASE_ANON_KEY`, en haut du script applicatif de `index.html`. Cette clé est faite pour le navigateur ; **ne mettez jamais la clé `service_role`** dans ce fichier.
+- Le nom saisi à l'inscription est conservé dans `user_metadata.name` et sert à la salutation.
+- Si *Confirm email* est activé dans Supabase (*Authentication → Providers → Email*), l'inscription affiche un message invitant à valider l'e-mail avant de se connecter ; si elle est désactivée, l'entrée est immédiate.
+- Le client Supabase est chargé depuis un CDN : une connexion internet est nécessaire pour se connecter. Les données métier (clients, proformas) restent pour l'instant en `localStorage` ; leur synchronisation vers des tables Supabase est une étape ultérieure.
+
 ## Données et confidentialité
 
 Les clients, brouillons, identités personnalisées, archives et l'historique sont enregistrés dans le `localStorage` du navigateur utilisé, **pas dans ce dépôt**. Ils ne sont ni synchronisés entre appareils ni transférés automatiquement en passant d'un fichier local à un site hébergé. Une suppression des données du navigateur peut effacer ces informations.

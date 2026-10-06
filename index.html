@@ -396,6 +396,43 @@
     const freshProfile=brand=>{const data=SITE_IDENTITIES[brand.id];return {company:data.company,address:data.address,phone:data.phone,whatsapp:data.whatsapp,email:data.email,...BANK_DEFAULTS,logo:'',color:brand.color}};
     const storageAvailable=(()=>{try{const probe='__proforma_storage_probe__';localStorage.setItem(probe,'1');localStorage.removeItem(probe);return true}catch{return false}})();
     function readStore(){try{const data=JSON.parse(localStorage.getItem(KEY)||'{}');return {profiles:data.profiles||{},drafts:data.drafts||{},invoices:Array.isArray(data.invoices)?data.invoices:[],clients:Array.isArray(data.clients)?data.clients:[],events:Array.isArray(data.events)?data.events:[],counters:data.counters||{},lastBrand:data.lastBrand||'voom'}}catch{return {profiles:{},drafts:{},invoices:[],clients:[],events:[],counters:{},lastBrand:'voom'}}}
+    let contactsSource='local',contactsLoading=false,contactsError='',contactsLoadToken=0;
+    const normalizeContactRecord=record=>({
+      id:String(record?.id||clientUUID()),
+      usageName:String(record?.nom_usage_interne||'').trim(),
+      company:String(record?.nom||'').trim(),
+      contact:'',
+      taxNumber:String(record?.numero_fiscal||'').trim(),
+      email:String(record?.emails||'').trim(),
+      phone:String(record?.telephones||'').trim(),
+      address:'',
+      createdAt:record?.created_at||new Date().toISOString(),
+      updatedAt:record?.updated_at||record?.created_at||new Date().toISOString(),
+      _source:'supabase'
+    });
+    async function loadContactsFromSupabase(userId){
+      if(!supabase||!userId)return;
+      const token=++contactsLoadToken;
+      contactsLoading=true;contactsError='';contactsSource='supabase';
+      renderClientPicker();renderClientDirectory();
+      const {data,error}=await supabase.from('contacts')
+        .select('id,nom,nom_usage_interne,numero_fiscal,emails,telephones,created_at,updated_at')
+        .order('nom',{ascending:true});
+      if(token!==contactsLoadToken||currentUser?.id!==userId)return;
+      contactsLoading=false;
+      if(error){
+        contactsSource='fallback';contactsError=String(error.message||error);
+        console.error('Chargement des contacts Supabase impossible',error);
+        renderClientPicker();renderClientDirectory();
+        toast('Les contacts Supabase sont indisponibles. Le répertoire local est affiché.');
+        return;
+      }
+      store.clients=Array.isArray(data)?data.map(normalizeContactRecord):[];
+      contactsSource='supabase';contactsError='';
+      renderClientPicker();renderClientDirectory();renderDashboard();
+      if(activeTab==='history')renderHistory();
+      toast(`${store.clients.length} contact${store.clients.length>1?'s':''} chargé${store.clients.length>1?'s':''} depuis Supabase.`);
+    }
     let store=readStore();let brand=BRANDS.find(b=>b.id===store.lastBrand)||BRANDS[0];let currentId=null;let draft=normalizeDraft(store.drafts[brand.id]);let activeTab='dashboard';let toastTimer;let editingClientId=null,importBook=null,importMatrix=[];
     function persist(){if(!storageAvailable)return true;try{localStorage.setItem(KEY,JSON.stringify(store));return true}catch(err){toast('Stockage local saturé ou indisponible. Libérez de l’espace (notamment les logos).');return false}}
     const formatDateTime=value=>{
@@ -599,7 +636,8 @@
           :'<div class="client-picker-empty">Aucun client trouvé. Vérifiez l’orthographe ou ajoutez la fiche dans l’onglet Clients.</div>';
       }else results.innerHTML='';
       const selection=selectedClient?`Fiche actuellement choisie : ${clientFullName(selectedClient)}. `:'';
-      $('#clientPickerCount').textContent=selection+(query
+      const source=contactsLoading?'Chargement depuis Supabase… ':contactsSource==='supabase'?'Supabase · ':contactsSource==='fallback'?'Répertoire local · ':'';
+      $('#clientPickerCount').textContent=source+selection+(query
         ?`${matches.length} résultat${matches.length>1?'s':''} sur ${store.clients.length} client${store.clients.length>1?'s':''}. Cliquez sur une fiche ci-dessus pour l’utiliser${matches.length>80?' ou affinez la recherche':''}.`
         :`${store.clients.length} client${store.clients.length>1?'s':''} disponibles pour les 8 sites. La sélection copie les coordonnées dans cette proforma.`);
     }
@@ -619,7 +657,8 @@
       const matches=[...store.clients]
         .filter(c=>normalizeText(`${c.company} ${c.contact} ${c.usageName||''} ${c.taxNumber||''} ${c.phone} ${c.email} ${c.address}`).includes(query))
         .sort((a,b)=>sort==='recent'?String(b.createdAt||'').localeCompare(String(a.createdAt||'')):clientFullName(a).localeCompare(clientFullName(b),'fr'));
-      $('#clientDirectoryCount').textContent=`${matches.length} / ${store.clients.length} client${store.clients.length>1?'s':''}`;
+      const source=contactsLoading?' · Chargement Supabase':contactsSource==='supabase'?' · Supabase':contactsSource==='fallback'?' · Répertoire local':'';
+      $('#clientDirectoryCount').textContent=`${matches.length} / ${store.clients.length} client${store.clients.length>1?'s':''}${source}`;
       $('#clientDirectoryList').innerHTML=matches.length?matches.slice(0,clientsShown).map(c=>`<div class="client-card"><div class="client-card-title">${esc(clientFullName(c))}</div><div class="client-card-meta">${[c.usageName?'Nom interne : '+c.usageName:'',c.taxNumber?'N° fiscal : '+c.taxNumber:'',c.company&&c.contact?'Contact : '+c.contact:'',c.phone,c.email,c.address].filter(Boolean).map(esc).join(' · ')||'Aucune autre coordonnée'}</div><div class="history-meta">Ajouté ${esc(formatDateTime(c.createdAt))}${c.updatedAt&&c.updatedAt!==c.createdAt?' · Modifié '+esc(formatDateTime(c.updatedAt)):''}</div><div class="client-card-actions"><button type="button" class="mini-btn" data-client-action="use" data-client-id="${esc(c.id)}">Utiliser sur la proforma</button><button type="button" class="mini-btn" data-client-action="edit" data-client-id="${esc(c.id)}">Modifier</button><button type="button" class="mini-btn danger" data-client-action="delete" data-client-id="${esc(c.id)}">Supprimer</button></div></div>`).join(''):'<div class="empty-state">Aucun client trouvé. Importez un fichier Excel ou ajoutez une fiche manuellement.</div>';
       $('#clientDirectoryMore').classList.toggle('hidden',matches.length<=clientsShown);
       $('#clientDirectoryMore').textContent=`Afficher plus de clients (${Math.min(matches.length-clientsShown,100)} suivants)`;
@@ -1081,7 +1120,9 @@
         $('#authScreen').classList.add('hidden');
         $('#userZone').classList.remove('hidden');
         $('#userGreeting').textContent=`Bonjour ${authDisplayName(currentUser)}`;
+        void loadContactsFromSupabase(currentUser.id);
       }else{
+        contactsLoadToken++;contactsLoading=false;contactsError='';contactsSource='local';
         $('#authScreen').classList.remove('hidden');
         $('#userZone').classList.add('hidden');
         $('#userGreeting').textContent='';

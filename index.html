@@ -406,7 +406,33 @@
       updatedAt:record?.updated_at||record?.created_at||new Date().toISOString(),
       _source:'supabase'
     });
+    const CONTACT_SELECT='id,nom,nom_usage_interne,numero_fiscal,emails,telephones,created_at,updated_at';
     const CONTACT_PAGE_SIZE=1000;
+    const supabaseContactsReady=()=>Boolean(supabase&&currentUser&&contactsSource==='supabase'&&!contactsLoading);
+    const contactRowFromClient=(entry,now=new Date().toISOString())=>({
+      // public.contacts ne contient pas de colonne contact ni address : nom est la valeur affichée.
+      nom:String(entry.company||entry.contact||entry.usageName||'').trim(),
+      nom_usage_interne:String(entry.usageName||'').trim()||null,
+      numero_fiscal:String(entry.taxNumber||'').trim()||null,
+      emails:String(entry.email||'').trim()||null,
+      telephones:String(entry.phone||'').trim()||null,
+      updated_at:now
+    });
+    async function saveContactToSupabase(entry,existing=null){
+      const payload=contactRowFromClient(entry);
+      const request=existing
+        ?supabase.from('contacts').update(payload).eq('id',existing.id).select(CONTACT_SELECT).maybeSingle()
+        :supabase.from('contacts').insert(payload).select(CONTACT_SELECT).single();
+      const {data,error}=await request;
+      if(error)throw error;
+      if(!data)throw new Error('La fiche Supabase n’existe plus ou n’est pas accessible.');
+      const saved=normalizeContactRecord(data);
+      return {...saved,contact:String(entry.contact||'').trim(),address:String(entry.address||'').trim(),_source:'supabase'};
+    }
+    async function deleteContactFromSupabase(id){
+      const {error}=await supabase.from('contacts').delete().eq('id',id);
+      if(error)throw error;
+    }
     async function loadContactsFromSupabase(userId){
       if(!supabase||!userId)return;
       const token=++contactsLoadToken;
@@ -672,7 +698,7 @@
       $('#clientDirectoryMore').textContent=`Afficher plus de clients (${Math.min(matches.length-clientsShown,100)} suivants)`;
     }
     function clearClientForm(){editingClientId=null;$$('[data-client-edit]').forEach(field=>field.value='');$('#clientFormTitle').textContent='Ajouter un client manuellement';$('#cancelClientEdit').classList.add('hidden');$('#saveClientBtn').textContent='Enregistrer le client'}
-    function saveClientForm(){
+    async function saveClientForm(){
       const entry=Object.fromEntries($$('[data-client-edit]').map(field=>[field.dataset.clientEdit,String(field.value||'').trim()]));
       if(!entry.company&&!entry.contact){toast('Indiquez une entreprise ou un nom de contact.');return}
       const emails=emailCheck(entry.email);
@@ -680,13 +706,34 @@
       entry.email=emails.value;
       const duplicate=store.clients.find(c=>c.id!==editingClientId&&sameClient(c,entry));
       if(duplicate){toast('Ce client existe déjà dans le répertoire. Modifiez sa fiche existante.');return}
+      if(supabase&&currentUser){
+        if(contactsLoading){toast('Le répertoire Supabase est encore en cours de chargement. Réessayez dans quelques secondes.');return}
+        if(!supabaseContactsReady()){toast('Supabase est indisponible : la fiche n’a pas été enregistrée.');return}
+        const existing=store.clients.find(c=>c.id===editingClientId)||null;
+        try{
+          const saved=await saveContactToSupabase(entry,existing);
+          const now=new Date().toISOString();
+          if(existing){
+            const index=store.clients.findIndex(c=>c.id===existing.id);
+            if(index>=0)store.clients[index]={...saved,createdAt:existing.createdAt||saved.createdAt,updatedAt:saved.updatedAt||now};
+          }else store.clients.push(saved);
+          logActivity(existing?'client.updated':'client.created',{client:clientFullName(saved)},now);
+          persist();
+          clearClientForm();renderClientDirectory();renderClientPicker();refreshActivityViews();
+          toast(existing?'Fiche client mise à jour dans Supabase.':'Nouveau client enregistré dans Supabase.');
+        }catch(error){
+          console.error('Enregistrement du contact Supabase impossible',error);
+          toast('Enregistrement Supabase impossible : '+String(error?.message||'vérifiez les droits de la table contacts.'));
+        }
+        return;
+      }
       const backup=clone(store.clients),eventsCount=store.events.length,now=new Date().toISOString();
       const client=store.clients.find(c=>c.id===editingClientId);
       if(client)Object.assign(client,entry,{updatedAt:now});
       else store.clients.push({id:clientUUID(),...entry,createdAt:now,updatedAt:now});
       logActivity(client?'client.updated':'client.created',{client:clientFullName(entry)},now);
       if(!persist()){store.clients=backup;store.events.length=eventsCount;return}
-      clearClientForm();renderClientDirectory();renderClientPicker();refreshActivityViews();toast(storageAvailable?'Fiche client enregistrée dans le répertoire commun.':'Client ajouté temporairement. Ouvrez le HTML hors aperçu pour le conserver.');
+      clearClientForm();renderClientDirectory();renderClientPicker();refreshActivityViews();toast(storageAvailable?'Fiche client enregistrée localement.':'Client ajouté temporairement.');
     }
     function renderArchive(){
       const query=$('#archiveSearch').value.trim().toLocaleLowerCase('fr');
@@ -815,7 +862,7 @@
     $('#clientDirectorySearch').addEventListener('input',()=>{clientsShown=100;renderClientDirectory()});
     $('#clientDirectorySort').addEventListener('change',()=>{clientsShown=100;renderClientDirectory()});
     $('#clientDirectoryMore').addEventListener('click',()=>{clientsShown+=100;renderClientDirectory()});
-    $('#clientDirectoryList').addEventListener('click',event=>{
+    $('#clientDirectoryList').addEventListener('click',async event=>{
       const button=event.target.closest('[data-client-action]');if(!button)return;
       const client=store.clients.find(c=>c.id===button.dataset.clientId);if(!client)return;
       if(button.dataset.clientAction==='use'){chooseClient(client.id);return}
@@ -826,13 +873,19 @@
       }
       if(button.dataset.clientAction==='delete'){
         if(!confirm(`Supprimer ${clientFullName(client)} du répertoire commun ? Les proformas déjà créées resteront inchangées.`))return;
+        const remote=Boolean(supabase&&currentUser);
+        if(remote){
+          if(!supabaseContactsReady()){toast('Supabase est indisponible : la fiche n’a pas été supprimée.');return}
+          try{await deleteContactFromSupabase(client.id)}
+          catch(error){console.error('Suppression du contact Supabase impossible',error);toast('Suppression Supabase impossible : '+String(error?.message||'vérifiez les droits de la table contacts.'));return}
+        }
         const backup=clone(store.clients),eventsCount=store.events.length;
         store.clients=store.clients.filter(c=>c.id!==client.id);
         logActivity('client.deleted',{client:clientFullName(client)});
-        if(!persist()){store.clients=backup;store.events.length=eventsCount;return}
+        if(!persist()&&!remote){store.clients=backup;store.events.length=eventsCount;return}
         if(draft.clientId===client.id){draft.clientId='';syncDraft();renderDocument()}
         if(editingClientId===client.id)clearClientForm();
-        renderClientDirectory();renderClientPicker();refreshActivityViews();toast('Fiche client supprimée.');
+        renderClientDirectory();renderClientPicker();refreshActivityViews();toast(remote?'Fiche client supprimée de Supabase.':'Fiche client supprimée.');
       }
     });
     $('#saveClientBtn').addEventListener('click',saveClientForm);

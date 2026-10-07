@@ -223,12 +223,13 @@
       <div id="authError" class="auth-error hidden" role="alert"></div>
       <div id="authInfo" class="auth-info hidden" role="status"></div>
       <form id="authLoginForm" class="auth-form" novalidate>
-        <label class="field-label">E-mail<input id="loginEmail" class="field" type="email" autocomplete="email" placeholder="vous@exemple.ci" required></label>
+        <label class="field-label">E-mail ou matricule 3CX<input id="loginIdentifier" class="field" type="text" autocomplete="username" autocapitalize="none" placeholder="vous@exemple.ci ou 3CX-001" required></label>
         <label class="field-label">Mot de passe<input id="loginPassword" class="field" type="password" autocomplete="current-password" required></label>
         <button type="submit" class="primary-btn auth-submit">Se connecter</button>
       </form>
       <form id="authRegisterForm" class="auth-form hidden" novalidate>
         <label class="field-label">Votre nom<input id="regName" class="field" type="text" autocomplete="name" placeholder="Affiché après « Bonjour »" required></label>
+        <label class="field-label">Matricule 3CX<input id="regMatricule" class="field" type="text" autocomplete="username" autocapitalize="characters" maxlength="64" pattern="[A-Za-z0-9][A-Za-z0-9._-]{2,63}" placeholder="Ex. 3CX-001" required></label>
         <label class="field-label">E-mail<input id="regEmail" class="field" type="email" autocomplete="email" placeholder="vous@exemple.ci" required></label>
         <label class="field-label">Mot de passe (6 caractères min.)<input id="regPassword" class="field" type="password" autocomplete="new-password" minlength="6" required></label>
         <button type="submit" class="primary-btn auth-submit">Créer mon compte</button>
@@ -1127,6 +1128,26 @@
       const meta=user?.user_metadata||{};
       return String(meta.name||meta.full_name||'').trim()||(user?.email?user.email.split('@')[0]:'utilisateur');
     };
+    const normalize3cxMatricule=value=>String(value||'').trim().toUpperCase();
+    const valid3cxMatricule=value=>/^[A-Z0-9][A-Z0-9._-]{2,63}$/.test(normalize3cxMatricule(value));
+    async function resolveLoginEmail(identifier){
+      const value=String(identifier||'').trim();
+      if(value.includes('@'))return {email:value};
+      const matricule=normalize3cxMatricule(value);
+      if(!valid3cxMatricule(matricule))return {error:'Saisissez un e-mail ou un matricule 3CX valide (ex. 3CX-001).'};
+      const {data,error}=await supabase.rpc('resolve_login_email',{p_matricule:matricule});
+      if(error){
+        console.error('Résolution du matricule 3CX impossible',error);
+        return {error:'La connexion par matricule n’est pas encore activée. Exécutez le script supabase/3cx-auth.sql dans le SQL Editor Supabase.'};
+      }
+      if(!data)return {error:'Identifiant ou mot de passe incorrect.'};
+      return {email:String(data)};
+    }
+    async function saveUserProfile(userId,matricule){
+      if(!userId||!matricule)return null;
+      const {error}=await supabase.from('user_profiles').upsert({id:userId,matricule_3cx:normalize3cxMatricule(matricule)},{onConflict:'id'});
+      return error||null;
+    }
     function applySession(session){
       currentUser=session?.user||null;
       if(currentUser){
@@ -1163,18 +1184,46 @@
     $('#authLoginForm').addEventListener('submit',async e=>{
       e.preventDefault();if(!supabase)return;
       authHide('#authError','#authInfo');setAuthBusy(true);
-      const {error}=await supabase.auth.signInWithPassword({email:$('#loginEmail').value.trim(),password:$('#loginPassword').value});
-      setAuthBusy(false);
-      if(error)authShow('#authError','Connexion refusée : '+error.message);
+      try{
+        const resolved=await resolveLoginEmail($('#loginIdentifier').value);
+        if(resolved.error){authShow('#authError',resolved.error);return}
+        const {error}=await supabase.auth.signInWithPassword({email:resolved.email,password:$('#loginPassword').value});
+        if(error)authShow('#authError','Connexion refusée : '+error.message);
+      }catch(error){
+        console.error('Connexion impossible',error);
+        authShow('#authError','Connexion impossible. Vérifiez vos identifiants et votre connexion internet.');
+      }finally{setAuthBusy(false)}
     });
     $('#authRegisterForm').addEventListener('submit',async e=>{
       e.preventDefault();if(!supabase)return;
       authHide('#authError','#authInfo');setAuthBusy(true);
       const name=$('#regName').value.trim();
-      const {data,error}=await supabase.auth.signUp({email:$('#regEmail').value.trim(),password:$('#regPassword').value,options:{data:{name}}});
-      setAuthBusy(false);
-      if(error){authShow('#authError','Inscription refusée : '+error.message);return}
-      if(!data.session)authShow('#authInfo','Compte créé. Supabase vous a envoyé un e-mail de confirmation : validez-le puis revenez vous connecter ici.');
+      const matricule=normalize3cxMatricule($('#regMatricule').value);
+      if(!valid3cxMatricule(matricule)){
+        setAuthBusy(false);
+        authShow('#authError','Le matricule 3CX doit contenir 3 à 64 caractères : lettres, chiffres, point, tiret ou underscore.');
+        $('#regMatricule').focus();
+        return;
+      }
+      try{
+        const {data,error}=await supabase.auth.signUp({email:$('#regEmail').value.trim(),password:$('#regPassword').value,options:{data:{name,matricule_3cx:matricule}}});
+        if(error){
+          const duplicate=/duplicate|unique|matricule/i.test(String(error.message||''));
+          authShow('#authError',duplicate?'Ce matricule 3CX est déjà utilisé. Choisissez-en un autre.':'Inscription refusée : '+error.message);
+          return;
+        }
+        if(data.session&&data.user){
+          const profileError=await saveUserProfile(data.user.id,matricule);
+          if(profileError){
+            console.error('Profil 3CX impossible à enregistrer',profileError);
+            toast('Compte créé, mais le matricule doit être configuré dans Supabase avant la connexion par matricule.');
+          }
+        }
+        if(!data.session)authShow('#authInfo','Compte créé. Supabase vous a envoyé un e-mail de confirmation : validez-le puis revenez vous connecter avec votre matricule 3CX ou votre e-mail.');
+      }catch(error){
+        console.error('Inscription impossible',error);
+        authShow('#authError','Inscription impossible. Vérifiez les informations saisies et votre connexion internet.');
+      }finally{setAuthBusy(false)}
     });
     $('#logoutBtn').addEventListener('click',async ()=>{if(!supabase)return;await supabase.auth.signOut();applySession(null)});
     initAuth();

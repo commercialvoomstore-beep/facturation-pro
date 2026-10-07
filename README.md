@@ -6,7 +6,7 @@ Application de facturation proforma autonome, sans serveur et utilisable en ouvr
 
 1. Téléchargez `index.html` et ouvrez-le dans un navigateur récent, ou hébergez-le comme site statique.
 2. Vérifiez les informations d'identité et les coordonnées bancaires de chaque marque avant d'émettre une proforma.
-3. Ajoutez vos clients manuellement dans l'onglet **Clients**, puis créez vos documents dans l'onglet **Éditeur**.
+3. Consultez et sélectionnez les clients déjà présents dans l'onglet **Clients**, puis créez vos documents dans l'onglet **Éditeur**.
 4. Pour un PDF, utilisez **Enregistrer en PDF…**, puis choisissez « Enregistrer au format PDF » dans le dialogue d'impression.
 
 Le logo de l'interface et les logos de factures sont intégrés au fichier HTML.
@@ -25,8 +25,8 @@ L'application s'ouvre sur un écran **Connexion / Inscription** : personne n'ent
 - Le client Supabase est chargé depuis un CDN : une connexion internet est nécessaire pour se connecter.
 - Après connexion, le répertoire de l'onglet **Éditeur** et de l'onglet **Clients** charge les enregistrements de `public.contacts` par pages de 1 000 lignes, afin de dépasser la limite de réponse par défaut de Supabase et de récupérer aussi les fiches au-delà de 1 000. Le mapping utilisé est : `nom` → entreprise / nom affiché, `nom_usage_interne` → nom interne, `numero_fiscal` → numéro fiscal, `emails` → e-mail et `telephones` → téléphone. Le schéma fourni ne contient pas de colonne d'adresse ni de contact séparé ; ces champs restent donc vides lors de la sélection.
 - La table `public.contacts` ne contient pas de `user_id` : elle est actuellement considérée comme un répertoire partagé entre les utilisateurs autorisés. Si les contacts doivent être privés par compte, ajoutez une colonne `user_id` et des politiques RLS avant de poursuivre.
-- Pour autoriser l'écriture du répertoire partagé, exécutez aussi une fois `supabase/contacts-write.sql` dans **Supabase → SQL Editor**. Ce script donne aux utilisateurs authentifiés les droits RLS d'ajout, de modification et de suppression sur `public.contacts` ; il n'utilise pas de clé `service_role`.
-- La création, la modification et la suppression d'une fiche depuis l'onglet **Clients** sont alors envoyées directement vers `public.contacts`, puis le répertoire local est rafraîchi. Le schéma actuel ne contient pas de colonne `contact` ni `address` : ces deux champs restent visuels/localement disponibles mais ne peuvent pas être persistés dans Supabase sans ajouter les colonnes correspondantes.
+- Pour autoriser la suppression depuis le répertoire partagé, exécutez aussi une fois `supabase/contacts-write.sql` dans **Supabase → SQL Editor**. Ce script donne aux utilisateurs authentifiés les droits RLS nécessaires sur `public.contacts` ; il n'utilise pas de clé `service_role`.
+- Les fiches affichées sont lues depuis `public.contacts`. Depuis la plateforme, elles peuvent être sélectionnées pour une proforma ou supprimées du répertoire ; l'ajout et la modification se gèrent désormais directement dans Supabase. Le schéma actuel ne contient pas de colonne `contact` ni `address`.
 - La sélection d'une fiche copie ses coordonnées dans la proforma. Les brouillons, proformas, profils, archives et événements restent enregistrés dans le `localStorage`.
 
 ## Données et confidentialité

@@ -289,7 +289,7 @@
         <div id="clientsPanel" class="panel-body hidden">
           <div class="section" id="clientListSection"><div class="section-head"><h2 class="section-title">Liste des clients</h2><span id="clientDirectoryCount" class="micro"></span></div><p class="storage-note" style="margin:0 0 13px">Répertoire commun aux huit marques. Recherchez une société, son nom d’usage interne ou son numéro fiscal, puis choisissez la fiche à utiliser.</p><div class="client-toolbar"><input id="clientDirectorySearch" class="field" type="search" placeholder="Société, nom interne, n° fiscal, téléphone…" aria-label="Rechercher dans le répertoire"><select id="clientDirectorySort" class="field" aria-label="Trier les clients"><option value="name">Nom A → Z</option><option value="recent">Ajouts récents</option></select></div><div id="clientDirectoryList" class="archive-list" style="margin-top:13px"></div><button type="button" id="clientDirectoryMore" class="secondary-btn hidden" style="width:100%;margin-top:12px">Afficher plus de clients</button><p class="storage-note">Les proformas déjà enregistrées gardent une copie des coordonnées utilisées.</p></div>
 
-          <div class="section" id="clientFormSection"><div class="section-head"><h2 class="section-title" id="clientFormTitle">Ajouter un client manuellement</h2><button type="button" id="cancelClientEdit" class="mini-btn hidden">Annuler</button></div><div class="input-grid"><label class="input-wrap full"><span class="field-label">Nom d’usage (interne) · non imprimé</span><input class="field" data-client-edit="usageName" placeholder="Nom utilisé pour retrouver la fiche"></label><label class="input-wrap full"><span class="field-label">Contact / Société · nom sur la proforma</span><input class="field" data-client-edit="company" placeholder="Société / organisation"></label><label class="input-wrap full"><span class="field-label">Nom du contact (facultatif)</span><input class="field" data-client-edit="contact" placeholder="Nom et prénom"></label><label class="input-wrap"><span class="field-label">Téléphone(s)</span><input class="field" data-client-edit="phone" type="tel" placeholder="+225 … / +225 …"></label><label class="input-wrap"><span class="field-label">E-mail(s)</span><input class="field" data-client-edit="email" type="text" inputmode="email" placeholder="client@exemple.ci ; autre@exemple.ci"></label><label class="input-wrap full"><span class="field-label">N° fiscal · non imprimé</span><input class="field" data-client-edit="taxNumber" placeholder="Numéro fiscal du client"></label><label class="input-wrap full"><span class="field-label">Adresse</span><textarea class="field-area" data-client-edit="address" placeholder="Adresse complète, ville, pays"></textarea></label></div><button type="button" id="saveClientBtn" class="primary-btn" style="width:100%;margin-top:13px">Enregistrer le client</button></div>
+
         </div>
         <div id="settingsPanel" class="panel-body hidden"><div class="section-head"><h2 class="section-title">Identité de <span id="settingsBrand"></span></h2></div><div class="settings-intro">Coordonnées publiques prédéfinies par site. Le nom commercial affiché doit être confirmé comme raison sociale légale avant émission. CORIS BANK, le BIC et l’IBAN sont proposés par défaut pour chaque marque : vérifiez leur pertinence avant l’envoi.</div><div id="profileSource" class="micro" style="margin:-10px 0 22px;line-height:1.5"></div>
           <div class="section"><div class="section-head"><h3 class="section-title"><span class="section-num">01</span> Identité & logo</h3></div><div class="input-grid"><label class="input-wrap full"><span class="field-label">Nom de l’émetteur (raison sociale à vérifier)</span><input class="field" data-profile="company" placeholder="Raison sociale vérifiée de l’émetteur"></label><label class="input-wrap full"><span class="field-label">Adresse de l’émetteur</span><input class="field" data-profile="address" placeholder="Adresse postale / siège"></label><label class="input-wrap"><span class="field-label">Téléphone</span><input class="field" data-profile="phone" placeholder="+225 …" type="tel"></label><label class="input-wrap"><span class="field-label">WhatsApp (facultatif)</span><input class="field" data-profile="whatsapp" placeholder="+225 …" type="tel"></label><label class="input-wrap full"><span class="field-label">E-mail</span><input class="field" data-profile="email" placeholder="contact@exemple.ci" type="email"></label><label class="input-wrap"><span class="field-label">Couleur principale</span><input type="color" class="setting-color" data-profile="color" aria-label="Couleur principale"></label><div class="input-wrap"><span class="field-label">Logo (PNG, JPG ou WebP)</span><div class="logo-upload"><img id="settingLogo" class="logo-preview-setting" alt="Aperçu logo"><div class="logo-actions"><input id="logoUpload" class="file-input" type="file" accept="image/png,image/jpeg,image/webp"><button type="button" id="removeLogo" class="mini-btn">Rétablir le logo du site</button></div></div><div class="micro" style="margin-top:7px">Logo du site intégré par défaut ; importez une image pour le remplacer.</div></div></div></div>
@@ -406,29 +406,8 @@
       updatedAt:record?.updated_at||record?.created_at||new Date().toISOString(),
       _source:'supabase'
     });
-    const CONTACT_SELECT='id,nom,nom_usage_interne,numero_fiscal,emails,telephones,created_at,updated_at';
     const CONTACT_PAGE_SIZE=1000;
     const supabaseContactsReady=()=>Boolean(supabase&&currentUser&&contactsSource==='supabase'&&!contactsLoading);
-    const contactRowFromClient=(entry,now=new Date().toISOString())=>({
-      // public.contacts ne contient pas de colonne contact ni address : nom est la valeur affichée.
-      nom:String(entry.company||entry.contact||entry.usageName||'').trim(),
-      nom_usage_interne:String(entry.usageName||'').trim()||null,
-      numero_fiscal:String(entry.taxNumber||'').trim()||null,
-      emails:String(entry.email||'').trim()||null,
-      telephones:String(entry.phone||'').trim()||null,
-      updated_at:now
-    });
-    async function saveContactToSupabase(entry,existing=null){
-      const payload=contactRowFromClient(entry);
-      const request=existing
-        ?supabase.from('contacts').update(payload).eq('id',existing.id).select(CONTACT_SELECT).maybeSingle()
-        :supabase.from('contacts').insert(payload).select(CONTACT_SELECT).single();
-      const {data,error}=await request;
-      if(error)throw error;
-      if(!data)throw new Error('La fiche Supabase n’existe plus ou n’est pas accessible.');
-      const saved=normalizeContactRecord(data);
-      return {...saved,contact:String(entry.contact||'').trim(),address:String(entry.address||'').trim(),_source:'supabase'};
-    }
     async function deleteContactFromSupabase(id){
       const {error}=await supabase.from('contacts').delete().eq('id',id);
       if(error)throw error;
@@ -469,7 +448,7 @@
       if(activeTab==='history')renderHistory();
       toast(`${store.clients.length} contact${store.clients.length>1?'s':''} chargé${store.clients.length>1?'s':''} depuis Supabase.`);
     }
-    let store=readStore();let brand=BRANDS.find(b=>b.id===store.lastBrand)||BRANDS[0];let currentId=null;let draft=normalizeDraft(store.drafts[brand.id]);let activeTab='dashboard';let toastTimer;let editingClientId=null;
+    let store=readStore();let brand=BRANDS.find(b=>b.id===store.lastBrand)||BRANDS[0];let currentId=null;let draft=normalizeDraft(store.drafts[brand.id]);let activeTab='dashboard';let toastTimer;
     function persist(){if(!storageAvailable)return true;try{localStorage.setItem(KEY,JSON.stringify(store));return true}catch(err){toast('Stockage local saturé ou indisponible. Libérez de l’espace (notamment les logos).');return false}}
     const formatDateTime=value=>{
       const time=Date.parse(value||'');
@@ -634,20 +613,7 @@
     const CLIENT_KEYS=['company','contact','phone','email','address']; // Uniquement les coordonnées copiées sur la proforma.
     const normalizeText=value=>String(value??'').trim().toLocaleLowerCase('fr').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ');
     const clientFullName=client=>client.company||client.contact||client.usageName||'Client sans nom';
-    const emailTokens=value=>String(value||'').split(/[;,\/\r\n]+|\s+(?=[^\s@]+@)/).map(v=>v.trim()).filter(Boolean);
-    const emailCheck=value=>{
-      const tokens=emailTokens(value),valid=tokens.filter(v=>/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v));
-      return {value:valid.join(' ; '),invalid:tokens.length-valid.length};
-    };
     const clientUUID=()=>typeof crypto!=='undefined'&&crypto.randomUUID?crypto.randomUUID():`client-${Date.now()}-${Math.random().toString(36).slice(2)}`;
-    function sameClient(a,b){
-      const mailA=emailTokens(a.email).map(normalizeText),mailB=new Set(emailTokens(b.email).map(normalizeText));
-      if(mailA.some(mail=>mailB.has(mail)))return true;
-      const phoneA=String(a.phone||'').replace(/\D/g,''),phoneB=String(b.phone||'').replace(/\D/g,'');
-      const nameA=normalizeText([a.company,a.contact].filter(Boolean).join(' ')),nameB=normalizeText([b.company,b.contact].filter(Boolean).join(' '));
-      return (nameA&&nameB&&nameA===nameB&&(!phoneA||!phoneB||phoneA===phoneB))||
-        (phoneA.length>=8&&phoneA===phoneB&&nameA===nameB);
-    }
     function renderClientPicker(){
       const search=$('#clientPickerSearch').value.trim(),query=normalizeText(search),queryDigits=search.replace(/\D/g,'');
       const selectedClient=store.clients.find(c=>c.id===draft.clientId);
@@ -693,47 +659,9 @@
         .sort((a,b)=>sort==='recent'?String(b.createdAt||'').localeCompare(String(a.createdAt||'')):clientFullName(a).localeCompare(clientFullName(b),'fr'));
       const source=contactsLoading?' · Chargement Supabase':contactsSource==='supabase'?' · Supabase':contactsSource==='fallback'?' · Répertoire local':'';
       $('#clientDirectoryCount').textContent=`${matches.length} / ${store.clients.length} client${store.clients.length>1?'s':''}${source}`;
-      $('#clientDirectoryList').innerHTML=matches.length?matches.slice(0,clientsShown).map(c=>`<div class="client-card"><div class="client-card-title">${esc(clientFullName(c))}</div><div class="client-card-meta">${[c.usageName?'Nom interne : '+c.usageName:'',c.taxNumber?'N° fiscal : '+c.taxNumber:'',c.company&&c.contact?'Contact : '+c.contact:'',c.phone,c.email,c.address].filter(Boolean).map(esc).join(' · ')||'Aucune autre coordonnée'}</div><div class="history-meta">Ajouté ${esc(formatDateTime(c.createdAt))}${c.updatedAt&&c.updatedAt!==c.createdAt?' · Modifié '+esc(formatDateTime(c.updatedAt)):''}</div><div class="client-card-actions"><button type="button" class="mini-btn" data-client-action="use" data-client-id="${esc(c.id)}">Utiliser sur la proforma</button><button type="button" class="mini-btn" data-client-action="edit" data-client-id="${esc(c.id)}">Modifier</button><button type="button" class="mini-btn danger" data-client-action="delete" data-client-id="${esc(c.id)}">Supprimer</button></div></div>`).join(''):'<div class="empty-state">Aucun client trouvé. Ajoutez une fiche manuellement dans l’onglet Clients.</div>';
+      $('#clientDirectoryList').innerHTML=matches.length?matches.slice(0,clientsShown).map(c=>`<div class="client-card"><div class="client-card-title">${esc(clientFullName(c))}</div><div class="client-card-meta">${[c.usageName?'Nom interne : '+c.usageName:'',c.taxNumber?'N° fiscal : '+c.taxNumber:'',c.company&&c.contact?'Contact : '+c.contact:'',c.phone,c.email,c.address].filter(Boolean).map(esc).join(' · ')||'Aucune autre coordonnée'}</div><div class="history-meta">Ajouté ${esc(formatDateTime(c.createdAt))}${c.updatedAt&&c.updatedAt!==c.createdAt?' · Modifié '+esc(formatDateTime(c.updatedAt)):''}</div><div class="client-card-actions"><button type="button" class="mini-btn" data-client-action="use" data-client-id="${esc(c.id)}">Utiliser sur la proforma</button><button type="button" class="mini-btn danger" data-client-action="delete" data-client-id="${esc(c.id)}">Supprimer</button></div></div>`).join(''):'<div class="empty-state">Aucun client trouvé dans le répertoire Supabase.</div>';
       $('#clientDirectoryMore').classList.toggle('hidden',matches.length<=clientsShown);
       $('#clientDirectoryMore').textContent=`Afficher plus de clients (${Math.min(matches.length-clientsShown,100)} suivants)`;
-    }
-    function clearClientForm(){editingClientId=null;$$('[data-client-edit]').forEach(field=>field.value='');$('#clientFormTitle').textContent='Ajouter un client manuellement';$('#cancelClientEdit').classList.add('hidden');$('#saveClientBtn').textContent='Enregistrer le client'}
-    async function saveClientForm(){
-      const entry=Object.fromEntries($$('[data-client-edit]').map(field=>[field.dataset.clientEdit,String(field.value||'').trim()]));
-      if(!entry.company&&!entry.contact){toast('Indiquez une entreprise ou un nom de contact.');return}
-      const emails=emailCheck(entry.email);
-      if(emails.invalid){toast('Vérifiez les adresses e-mail : séparez-les par un point-virgule, une virgule ou une barre oblique.');return}
-      entry.email=emails.value;
-      const duplicate=store.clients.find(c=>c.id!==editingClientId&&sameClient(c,entry));
-      if(duplicate){toast('Ce client existe déjà dans le répertoire. Modifiez sa fiche existante.');return}
-      if(supabase&&currentUser){
-        if(contactsLoading){toast('Le répertoire Supabase est encore en cours de chargement. Réessayez dans quelques secondes.');return}
-        if(!supabaseContactsReady()){toast('Supabase est indisponible : la fiche n’a pas été enregistrée.');return}
-        const existing=store.clients.find(c=>c.id===editingClientId)||null;
-        try{
-          const saved=await saveContactToSupabase(entry,existing);
-          const now=new Date().toISOString();
-          if(existing){
-            const index=store.clients.findIndex(c=>c.id===existing.id);
-            if(index>=0)store.clients[index]={...saved,createdAt:existing.createdAt||saved.createdAt,updatedAt:saved.updatedAt||now};
-          }else store.clients.push(saved);
-          logActivity(existing?'client.updated':'client.created',{client:clientFullName(saved)},now);
-          persist();
-          clearClientForm();renderClientDirectory();renderClientPicker();refreshActivityViews();
-          toast(existing?'Fiche client mise à jour dans Supabase.':'Nouveau client enregistré dans Supabase.');
-        }catch(error){
-          console.error('Enregistrement du contact Supabase impossible',error);
-          toast('Enregistrement Supabase impossible : '+String(error?.message||'vérifiez les droits de la table contacts.'));
-        }
-        return;
-      }
-      const backup=clone(store.clients),eventsCount=store.events.length,now=new Date().toISOString();
-      const client=store.clients.find(c=>c.id===editingClientId);
-      if(client)Object.assign(client,entry,{updatedAt:now});
-      else store.clients.push({id:clientUUID(),...entry,createdAt:now,updatedAt:now});
-      logActivity(client?'client.updated':'client.created',{client:clientFullName(entry)},now);
-      if(!persist()){store.clients=backup;store.events.length=eventsCount;return}
-      clearClientForm();renderClientDirectory();renderClientPicker();refreshActivityViews();toast(storageAvailable?'Fiche client enregistrée localement.':'Client ajouté temporairement.');
     }
     function renderArchive(){
       const query=$('#archiveSearch').value.trim().toLocaleLowerCase('fr');
@@ -866,11 +794,6 @@
       const button=event.target.closest('[data-client-action]');if(!button)return;
       const client=store.clients.find(c=>c.id===button.dataset.clientId);if(!client)return;
       if(button.dataset.clientAction==='use'){chooseClient(client.id);return}
-      if(button.dataset.clientAction==='edit'){
-        editingClientId=client.id;$$('[data-client-edit]').forEach(field=>field.value=client[field.dataset.clientEdit]||'');
-        $('#clientFormTitle').textContent=`Modifier : ${clientFullName(client)}`;$('#cancelClientEdit').classList.remove('hidden');
-        $('#saveClientBtn').textContent='Enregistrer les modifications';$('#clientFormSection').scrollIntoView?.({behavior:'smooth',block:'start'});return;
-      }
       if(button.dataset.clientAction==='delete'){
         if(!confirm(`Supprimer ${clientFullName(client)} du répertoire commun ? Les proformas déjà créées resteront inchangées.`))return;
         const remote=Boolean(supabase&&currentUser);
@@ -884,12 +807,9 @@
         logActivity('client.deleted',{client:clientFullName(client)});
         if(!persist()&&!remote){store.clients=backup;store.events.length=eventsCount;return}
         if(draft.clientId===client.id){draft.clientId='';syncDraft();renderDocument()}
-        if(editingClientId===client.id)clearClientForm();
         renderClientDirectory();renderClientPicker();refreshActivityViews();toast(remote?'Fiche client supprimée de Supabase.':'Fiche client supprimée.');
       }
     });
-    $('#saveClientBtn').addEventListener('click',saveClientForm);
-    $('#cancelClientEdit').addEventListener('click',clearClientForm);
     $('#logoUpload').addEventListener('change',event=>{const file=event.target.files?.[0];if(!file)return;if(!['image/png','image/jpeg','image/webp'].includes(file.type)){toast('Utilisez un logo PNG, JPG ou WebP.');event.target.value='';return}if(file.size>350000){toast('Logo trop lourd : 350 Ko maximum pour le stockage local.');event.target.value='';return}const reader=new FileReader();reader.onload=()=>{const result=String(reader.result);if(!safeLogo(result)){toast('Image invalide.');return}updateProfile('logo',result);fillProfile();const count=store.events.length;logActivity('identity.updated',{brandId:brand.id,field:'Logo personnalisé'});if(!persist())store.events.length=count;else refreshActivityViews();toast('Logo enregistré pour cette marque.')};reader.readAsDataURL(file)});
     $('#removeLogo').addEventListener('click',()=>{updateProfile('logo','');$('#logoUpload').value='';fillProfile();const count=store.events.length;logActivity('identity.updated',{brandId:brand.id,field:'Logo',note:'Logo du site rétabli'});if(!persist())store.events.length=count;else refreshActivityViews();toast('Logo officiel du site rétabli.')});
     // Les images incorporées doivent être décodées avant la capture PDF ou l'impression.

@@ -6,10 +6,10 @@ Application de facturation proforma autonome, sans serveur et utilisable en ouvr
 
 1. Téléchargez `index.html` et ouvrez-le dans un navigateur récent, ou hébergez-le comme site statique.
 2. Vérifiez les informations d'identité et les coordonnées bancaires de chaque marque avant d'émettre une proforma.
-3. Ajoutez ou importez vos clients (Excel `.xlsx` ou CSV), puis créez vos documents dans l'onglet **Éditeur**.
+3. Ajoutez vos clients manuellement dans l'onglet **Clients**, puis créez vos documents dans l'onglet **Éditeur**.
 4. Pour un PDF, utilisez **Enregistrer en PDF…**, puis choisissez « Enregistrer au format PDF » dans le dialogue d'impression.
 
-Le logo de l'interface, les logos de factures et les bibliothèques nécessaires à l'import des fichiers `.xlsx` sont intégrés au fichier HTML. Certains formats anciens (`.xls`, `.xlsb`) peuvent demander l'ouverture du fichier HTML directement dans le navigateur si l'aperçu bloque le lecteur complémentaire.
+Le logo de l'interface et les logos de factures sont intégrés au fichier HTML.
 
 ## Authentification (Supabase)
 

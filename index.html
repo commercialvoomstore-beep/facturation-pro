@@ -410,24 +410,38 @@
       updatedAt:record?.updated_at||record?.created_at||new Date().toISOString(),
       _source:'supabase'
     });
+    const CONTACT_PAGE_SIZE=1000;
     async function loadContactsFromSupabase(userId){
       if(!supabase||!userId)return;
       const token=++contactsLoadToken;
       contactsLoading=true;contactsError='';contactsSource='supabase';
       renderClientPicker();renderClientDirectory();
-      const {data,error}=await supabase.from('contacts')
-        .select('id,nom,nom_usage_interne,numero_fiscal,emails,telephones,created_at,updated_at')
-        .order('nom',{ascending:true});
+      const contacts=[];let from=0;let loadError=null;
+      do{
+        const {data,error}=await supabase.from('contacts')
+          .select('id,nom,nom_usage_interne,numero_fiscal,emails,telephones,created_at,updated_at')
+          .order('nom',{ascending:true})
+          .order('id',{ascending:true})
+          .range(from,from+CONTACT_PAGE_SIZE-1);
+        if(token!==contactsLoadToken||currentUser?.id!==userId)return;
+        if(error){loadError=error;break}
+        const page=Array.isArray(data)?data:[];
+        if(!page.length)break;
+        contacts.push(...page);
+        // Le serveur peut appliquer une limite plus basse que celle demandée.
+        // On avance du nombre réellement reçu pour ne perdre aucune fiche.
+        from+=page.length;
+      }while(true);
       if(token!==contactsLoadToken||currentUser?.id!==userId)return;
       contactsLoading=false;
-      if(error){
-        contactsSource='fallback';contactsError=String(error.message||error);
-        console.error('Chargement des contacts Supabase impossible',error);
+      if(loadError){
+        contactsSource='fallback';contactsError=String(loadError.message||loadError);
+        console.error('Chargement des contacts Supabase impossible',loadError);
         renderClientPicker();renderClientDirectory();
         toast('Les contacts Supabase sont indisponibles. Le répertoire local est affiché.');
         return;
       }
-      store.clients=Array.isArray(data)?data.map(normalizeContactRecord):[];
+      store.clients=contacts.map(normalizeContactRecord);
       contactsSource='supabase';contactsError='';
       renderClientPicker();renderClientDirectory();renderDashboard();
       if(activeTab==='history')renderHistory();

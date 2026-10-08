@@ -29,6 +29,7 @@ L'application s'ouvre sur un écran **Connexion / Inscription** : personne n'ent
 - Les fiches affichées sont lues depuis `public.contacts`. Depuis la plateforme, elles peuvent être sélectionnées pour une proforma ou supprimées du répertoire. Dans l’éditeur standard, un nouveau client peut être utilisé uniquement sur la proforma ou enregistré explicitement dans le répertoire commun ; la modification manuelle d’une fiche existante reste désactivée.
 - L’enregistrement contextuel écrit `source = manual`, sans `external_id`, et mappe `clientCompany` vers `nom`, `clientContact` vers `contact`, `clientPhone` vers `telephones`, `clientEmail` vers `emails`, `clientAddress` vers `address`, `clientNcc` vers `numero_fiscal` et `clientRcc` vers `numero_registre` / `register_number`. Une vérification des doublons par NCC, RCC, e-mail, téléphone ou nom est effectuée avant l’insertion.
 - La sélection d'une fiche copie ses coordonnées dans la proforma. Les brouillons, proformas, profils, archives et événements restent enregistrés dans le `localStorage`.
+- Le champ facultatif **Titre / objet de la proforma** est conservé dans les brouillons et les proformas enregistrées. Il s’affiche dans l’en-tête du document, sous « Facture proforma » et avant le numéro, par exemple : `INFRASTRUCTURE WI-FI PROFESSIONNELLE`. Les archives peuvent également être recherchées par ce titre.
 
 ## Synchronisation VosFactures
 

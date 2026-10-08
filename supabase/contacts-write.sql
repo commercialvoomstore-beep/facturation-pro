@@ -35,26 +35,40 @@ alter table public.contacts enable row level security;
 revoke all on table public.contacts from public, anon;
 grant select, insert, update, delete on table public.contacts to authenticated;
 
-drop policy if exists "Authenticated users can read shared contacts" on public.contacts;
+-- Le répertoire est partagé entre les utilisateurs authentifiés. On retire les
+-- anciennes policies éventuellement restrictives afin qu'elles ne bloquent pas
+-- l'insertion malgré les policies partagées ci-dessous.
+do $$
+declare
+  existing_policy record;
+begin
+  for existing_policy in
+    select policyname
+    from pg_policies
+    where schemaname = 'public'
+      and tablename = 'contacts'
+  loop
+    execute format('drop policy if exists %I on public.contacts', existing_policy.policyname);
+  end loop;
+end
+$$;
+
 create policy "Authenticated users can read shared contacts"
   on public.contacts for select
   to authenticated
   using (true);
 
-drop policy if exists "Authenticated users can create shared contacts" on public.contacts;
 create policy "Authenticated users can create shared contacts"
   on public.contacts for insert
   to authenticated
   with check (true);
 
-drop policy if exists "Authenticated users can update shared contacts" on public.contacts;
 create policy "Authenticated users can update shared contacts"
   on public.contacts for update
   to authenticated
   using (true)
   with check (true);
 
-drop policy if exists "Authenticated users can delete shared contacts" on public.contacts;
 create policy "Authenticated users can delete shared contacts"
   on public.contacts for delete
   to authenticated

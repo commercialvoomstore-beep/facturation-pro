@@ -846,8 +846,8 @@
       }catch(error){
         console.error('Création du contact Supabase impossible',error);
         const message=String(error?.message||'Enregistrement impossible.');
-        const migrationHint=/(?:column|schema cache|relation|permission|policy|source|external_id|numero_registre|register_number)/i.test(message)
-          ?' Exécutez supabase/contacts-write.sql dans le SQL Editor Supabase puis réessayez.' :'';
+        const migrationHint=/(?:row-level security|column|schema cache|relation|permission|policy|source|external_id|numero_registre|register_number)/i.test(message)
+          ?' Exécutez la version à jour de supabase/contacts-write.sql dans le SQL Editor Supabase, puis rechargez la page.' :'';
         setClientSaveNotice(`Enregistrement impossible : ${message}${migrationHint}`,'error');
         toast('Le nouveau client n’a pas été enregistré.');
       }finally{

@@ -27,8 +27,20 @@ where coalesce(nullif(btrim(numero_registre), ''), '') = ''
 -- Une nouvelle synchronisation met à jour la fiche VosFactures correspondante
 -- au lieu de créer un doublon. Les external_id NULL restent autorisés pour les
 -- anciennes fiches saisies directement dans Supabase.
-create unique index if not exists contacts_source_external_id_unique
-  on public.contacts (source, external_id);
+do $$
+begin
+  begin
+    create unique index if not exists contacts_source_external_id_unique
+      on public.contacts (source, external_id);
+  exception when unique_violation then
+    -- Des doublons historiques ne doivent pas empêcher l'installation des
+    -- policies RLS. La synchronisation pourra être dédoublonnée séparément.
+    raise notice 'Index unique ignoré : des doublons source/external_id existent déjà.';
+    create index if not exists contacts_source_external_id_lookup
+      on public.contacts (source, external_id);
+  end;
+end
+$$;
 
 alter table public.contacts enable row level security;
 

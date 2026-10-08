@@ -59,3 +59,6 @@ create policy "Authenticated users can delete shared contacts"
   on public.contacts for delete
   to authenticated
   using (true);
+
+-- Force le rechargement du cache de schéma PostgREST après l’ajout des colonnes.
+notify pgrst, 'reload schema';

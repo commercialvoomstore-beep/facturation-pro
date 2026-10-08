@@ -770,6 +770,33 @@
       renderDocument();
       toast('Client utilisé uniquement pour cette proforma.');
     }
+    function missingContactColumn(error){
+      const message=String(error?.message||'');
+      const patterns=[
+        /Could not find the ['"]([^'"]+)['"] column/i,
+        /column ['"]?([A-Za-z_][A-Za-z0-9_]*)['"]?.*(?:does not exist|schema cache)/i,
+        /column [A-Za-z0-9_.]+\.([A-Za-z_][A-Za-z0-9_]*) does not exist/i
+      ];
+      for(const pattern of patterns){const match=message.match(pattern);if(match?.[1])return match[1]}
+      return '';
+    }
+    async function insertManualContact(payload){
+      let candidate={...payload};const omitted=[];
+      for(let attempt=0;attempt<=Object.keys(payload).length;attempt++){
+        const {data,error}=await supabase.from('contacts').insert(candidate).select('*').single();
+        if(!error)return {data,omitted};
+        const missing=missingContactColumn(error);
+        if(!missing||!Object.hasOwn(candidate,missing))throw error;
+        const alternateRcc=missing==='numero_registre'?'register_number':missing==='register_number'?'numero_registre':'';
+        const hasAlternateRcc=alternateRcc&&Object.hasOwn(candidate,alternateRcc);
+        const value=String(payload[missing]??'').trim();
+        if(hasAlternateRcc||['source','external_id'].includes(missing)||!value){
+          omitted.push(missing);delete candidate[missing];continue;
+        }
+        throw new Error(`La colonne ${missing} est absente de public.contacts et empêche de conserver cette information. Exécutez supabase/contacts-write.sql dans Supabase, puis rechargez la page.`);
+      }
+      throw new Error('La structure de public.contacts ne permet pas d’enregistrer cette fiche.');
+    }
     async function saveClientToDirectory(){
       if(clientSaving)return;
       if(draft.mode==='turbo'){toast('Passez en Édition complète pour enregistrer un client.');return}
@@ -801,10 +828,10 @@
       };
       clientSaving=true;clientSaveNotice='';renderClientSaveControls();
       try{
-        const {data,error}=await supabase.from('contacts').insert(payload).select('id,nom,nom_usage_interne,numero_fiscal,numero_registre,register_number,emails,telephones,contact,address,source,external_id,created_at,updated_at').single();
-        if(error)throw error;
+        const {data,omitted}=await insertManualContact(payload);
         if(!data?.id)throw new Error('Supabase n’a pas retourné l’identifiant de la nouvelle fiche.');
         const client=normalizeContactRecord(data);
+        const compatibilityFields=omitted.length?` Compatibilité appliquée : ${omitted.join(', ')} non disponible${omitted.length>1?'s':''} dans votre schéma.`:'';
         store.clients=[...store.clients.filter(item=>item.id!==client.id),client];
         contactsSource='supabase';contactsError='';
         draft.clientId=client.id;
@@ -812,10 +839,10 @@
         logActivity('client.created',{client:clientFullName(client),note:'Fiche enregistrée depuis une proforma'});
         syncDraft();
         persist();
-        clientSaveNotice=`${clientFullName(client)} est maintenant enregistré dans le répertoire commun.`;
+        clientSaveNotice=`${clientFullName(client)} est maintenant enregistré dans le répertoire commun.${compatibilityFields}`;
         clientSaveNoticeState='success';
         renderClientPicker();renderClientDirectory();renderDashboard();renderDocument();
-        toast('Nouveau client enregistré et ajouté à la proforma.');
+        toast(`Nouveau client enregistré et ajouté à la proforma.${compatibilityFields}`);
       }catch(error){
         console.error('Création du contact Supabase impossible',error);
         const message=String(error?.message||'Enregistrement impossible.');

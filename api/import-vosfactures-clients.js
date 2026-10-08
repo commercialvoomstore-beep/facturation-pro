@@ -58,6 +58,7 @@ function mapClient(client) {
     country: clean(client?.country),
     post_code: clean(client?.post_code),
     register_number: clean(client?.register_number),
+    numero_registre: clean(client?.register_number),
     external_created_at: dateOrNull(client?.created_at),
     external_updated_at: dateOrNull(client?.updated_at)
   };

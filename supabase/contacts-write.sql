@@ -14,8 +14,15 @@ alter table public.contacts
   add column if not exists country text,
   add column if not exists post_code text,
   add column if not exists register_number text,
+  add column if not exists numero_registre text,
   add column if not exists external_created_at timestamptz,
   add column if not exists external_updated_at timestamptz;
+
+-- Compatibilité avec les lots SQL qui utilisent numero_registre pour le RCC.
+update public.contacts
+set numero_registre = coalesce(nullif(btrim(numero_registre), ''), nullif(btrim(register_number), ''))
+where coalesce(nullif(btrim(numero_registre), ''), '') = ''
+  and nullif(btrim(register_number), '') is not null;
 
 -- Une nouvelle synchronisation met à jour la fiche VosFactures correspondante
 -- au lieu de créer un doublon. Les external_id NULL restent autorisés pour les

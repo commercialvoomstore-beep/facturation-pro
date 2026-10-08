@@ -23,7 +23,7 @@ L'application s'ouvre sur un écran **Connexion / Inscription** : personne n'ent
 - L'écran de connexion accepte désormais soit l'e-mail, soit le matricule 3CX, avec le même mot de passe. Les comptes existants continuent de se connecter par e-mail ; ils doivent disposer d'un profil 3CX avant de pouvoir utiliser un matricule.
 - Si *Confirm email* est activé dans Supabase (*Authentication → Providers → Email*), l'inscription affiche un message invitant à valider l'e-mail avant de se connecter ; le trigger crée néanmoins la correspondance du matricule dès la création du compte.
 - Le client Supabase est chargé depuis un CDN : une connexion internet est nécessaire pour se connecter.
-- Après connexion, le répertoire de l'onglet **Éditeur** et de l'onglet **Clients** charge les enregistrements de `public.contacts` par pages de 1 000 lignes. Le mapping utilisé est : `nom` → entreprise / nom affiché, `nom_usage_interne` → nom interne, `numero_fiscal` → numéro fiscal, `emails` → e-mail, `telephones` → téléphone, `contact` → personne de contact et `address` → adresse.
+- Après connexion, le répertoire de l'onglet **Éditeur** et de l'onglet **Clients** charge les enregistrements de `public.contacts` par pages de 1 000 lignes. Le mapping utilisé est : `nom` → entreprise / nom affiché, `nom_usage_interne` → nom interne, `numero_fiscal` → NCC, `numero_registre` ou `register_number` → RCC, `emails` → e-mail, `telephones` → téléphone, `contact` → personne de contact et `address` → adresse. La sélection d'un client recopie le NCC et le RCC dans la proforma lorsqu'ils existent.
 - La table `public.contacts` ne contient pas de `user_id` : elle est actuellement considérée comme un répertoire partagé entre les utilisateurs autorisés. Si les contacts doivent être privés par compte, ajoutez une colonne `user_id` et des politiques RLS avant de poursuivre.
 - Pour autoriser la lecture, la suppression et la synchronisation depuis le répertoire partagé, exécutez `supabase/contacts-write.sql` dans **Supabase → SQL Editor**. Ce script ajoute les colonnes d’origine externe, crée l’unicité `(source, external_id)` et donne aux utilisateurs authentifiés les droits RLS nécessaires. Il n’utilise pas de clé `service_role`.
 - Les fiches affichées sont lues depuis `public.contacts`. Depuis la plateforme, elles peuvent être sélectionnées pour une proforma ou supprimées du répertoire ; les ajouts et modifications manuels se gèrent directement dans Supabase.
@@ -35,7 +35,7 @@ Le bouton **Importer les clients** de l’onglet **Clients** récupère l’endp
 
 - `source = vosfactures` ;
 - `external_id = id` VosFactures ;
-- les champs de nom, nom d’usage, numéro fiscal, e-mail, téléphone, contact et adresse normalisés.
+- les champs de nom, nom d’usage, NCC, RCC, e-mail, téléphone, contact et adresse normalisés.
 
 Relancer l’import est donc idempotent : les fiches existantes sont mises à jour au lieu d’être dupliquées. Les champs VosFactures individuels `token`, `panel_url` et les données brutes ne sont jamais enregistrés.
 

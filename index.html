@@ -272,10 +272,10 @@
             <div class="pill-group" role="group" aria-label="Mode de saisie"><button type="button" class="pill active" data-mode="standard">Édition complète</button><button type="button" class="pill" data-mode="turbo">⚡ Facture Turbo</button></div>
             <div class="hint-box accent-hint" id="turboHint" style="display:none"><strong>Mode express :</strong> trois champs suffisent. Le HT et la TVA sont déduits du TTC saisi.</div>
           </div>
-          <div class="section"><div class="section-head"><h2 class="section-title">Répertoire clients commun</h2><button type="button" id="openClientsBtn" class="mini-btn">Gérer les clients ↗</button></div><div class="input-grid"><label class="input-wrap full"><span class="field-label">Rechercher un client</span><input id="clientPickerSearch" class="field" type="search" placeholder="Nom, société, n° fiscal, téléphone ou e-mail…" autocomplete="off"></label><div id="clientPickerResults" class="client-picker-results hidden" aria-label="Résultats de la recherche de clients"></div><label class="input-wrap full"><span class="field-label">Sélectionner une fiche</span><select id="clientSelect" class="field" aria-label="Choisir un client du répertoire"><option value="">Saisie manuelle</option></select></label></div><div id="clientPickerCount" class="micro" role="status" aria-live="polite" style="margin-top:9px"></div><div class="visibility-card"><div class="field-label" style="margin-bottom:9px">Coordonnées à afficher sur cette proforma</div><div id="clientDisplayOptions" class="visibility-options"><label><input type="checkbox" data-client-visibility="company" checked> Entreprise</label><label><input type="checkbox" data-client-visibility="contact" checked> Contact</label><label><input type="checkbox" data-client-visibility="phone" checked> Téléphone</label><label><input type="checkbox" data-client-visibility="email" checked> E-mail</label><label><input type="checkbox" data-client-visibility="address" checked> Adresse</label></div></div></div>
+          <div class="section"><div class="section-head"><h2 class="section-title">Répertoire clients commun</h2><button type="button" id="openClientsBtn" class="mini-btn">Gérer les clients ↗</button></div><div class="input-grid"><label class="input-wrap full"><span class="field-label">Rechercher un client</span><input id="clientPickerSearch" class="field" type="search" placeholder="Nom, société, NCC, RCC, téléphone ou e-mail…" autocomplete="off"></label><div id="clientPickerResults" class="client-picker-results hidden" aria-label="Résultats de la recherche de clients"></div><label class="input-wrap full"><span class="field-label">Sélectionner une fiche</span><select id="clientSelect" class="field" aria-label="Choisir un client du répertoire"><option value="">Saisie manuelle</option></select></label></div><div id="clientPickerCount" class="micro" role="status" aria-live="polite" style="margin-top:9px"></div><div class="visibility-card"><div class="field-label" style="margin-bottom:9px">Coordonnées à afficher sur cette proforma</div><div id="clientDisplayOptions" class="visibility-options"><label><input type="checkbox" data-client-visibility="company" checked> Entreprise</label><label><input type="checkbox" data-client-visibility="contact" checked> Contact</label><label><input type="checkbox" data-client-visibility="phone" checked> Téléphone</label><label><input type="checkbox" data-client-visibility="email" checked> E-mail</label><label><input type="checkbox" data-client-visibility="address" checked> Adresse</label><label><input type="checkbox" data-client-visibility="ncc" checked> NCC</label><label><input type="checkbox" data-client-visibility="rcc" checked> RCC</label></div></div></div>
           <div id="standardFields">
             <div class="section"><div class="section-head"><h2 class="section-title"><span class="section-num">02</span> Informations client</h2></div>
-              <div class="input-grid"><label class="input-wrap full"><span class="field-label">Entreprise / raison sociale</span><input class="field" data-field="clientCompany" placeholder="Ex. Société Koffi SARL" autocomplete="organization"></label><label class="input-wrap full"><span class="field-label">Nom du contact</span><input class="field" data-field="clientContact" placeholder="Ex. Mme Aya Koné" autocomplete="name"></label><label class="input-wrap"><span class="field-label">Téléphone</span><input class="field" data-field="clientPhone" placeholder="+225 07 00 00 00 00" type="tel"></label><label class="input-wrap"><span class="field-label">E-mail client (facultatif)</span><input class="field" data-field="clientEmail" placeholder="client@exemple.ci" type="text" inputmode="email"></label><label class="input-wrap full"><span class="field-label">Adresse</span><input class="field" data-field="clientAddress" placeholder="Abidjan, Côte d’Ivoire"></label></div>
+              <div class="input-grid"><label class="input-wrap full"><span class="field-label">Entreprise / raison sociale</span><input class="field" data-field="clientCompany" placeholder="Ex. Société Koffi SARL" autocomplete="organization"></label><label class="input-wrap full"><span class="field-label">Nom du contact</span><input class="field" data-field="clientContact" placeholder="Ex. Mme Aya Koné" autocomplete="name"></label><label class="input-wrap"><span class="field-label">Téléphone</span><input class="field" data-field="clientPhone" placeholder="+225 07 00 00 00 00" type="tel"></label><label class="input-wrap"><span class="field-label">E-mail client (facultatif)</span><input class="field" data-field="clientEmail" placeholder="client@exemple.ci" type="text" inputmode="email"></label><label class="input-wrap full"><span class="field-label">Adresse</span><input class="field" data-field="clientAddress" placeholder="Abidjan, Côte d’Ivoire"></label><label class="input-wrap"><span class="field-label">NCC client (facultatif)</span><input class="field" data-field="clientNcc" placeholder="Numéro de compte contribuable"></label><label class="input-wrap"><span class="field-label">RCC client (facultatif)</span><input class="field" data-field="clientRcc" placeholder="Numéro RCC / RCCM"></label></div>
             </div>
             <div class="section"><div class="section-head"><h2 class="section-title"><span class="section-num">03</span> Articles & prestations</h2><span id="lineCount" class="micro"></span></div><div id="itemList" role="region" tabindex="0" aria-label="Liste défilante des articles et prestations"></div><button type="button" id="addItem" class="ghost-btn">＋ &nbsp; Ajouter une ligne</button></div>
           </div>
@@ -292,7 +292,7 @@
         <div id="archivePanel" class="panel-body hidden"><div class="section-head"><h2 class="section-title">Proformas enregistrées</h2><span class="micro" id="archiveBrand"></span></div><div class="archive-toolbar"><input id="archiveSearch" class="field" type="search" placeholder="Rechercher client ou numéro…" aria-label="Rechercher les proformas"></div><div class="archive-count" id="archiveCount"></div><div class="archive-list" id="archiveList"></div><p class="storage-note">Les archives sont stockées uniquement dans ce navigateur, sur cet appareil.</p></div>
         <div id="historyPanel" class="panel-body hidden"><div class="section-head"><h2 class="section-title">Historique d’activité</h2><span id="historyCount" class="micro"></span></div><p class="storage-note history-intro">Créations, modifications et suppressions enregistrées sur cet appareil. Les clients sont partagés entre les marques. Les frappes et brouillons ne sont pas journalisés ; aucun compte utilisateur n’identifie la personne qui agit.</p><div class="history-filters"><input id="historySearch" class="field" type="search" placeholder="Numéro, client ou action…" aria-label="Rechercher dans l’historique"><select id="historyScope" class="field" aria-label="Périmètre de l’historique"><option value="all">Toutes les marques</option><option value="brand">Marque active</option></select><select id="historyType" class="field" aria-label="Type d’action"><option value="all">Toutes les actions</option><option value="invoice">Proformas</option><option value="client">Clients</option><option value="identity">Identités</option></select></div><div id="historyList" class="history-list"></div><button type="button" id="historyMore" class="secondary-btn hidden" style="width:100%;margin-top:12px">Afficher plus d’actions</button><p class="storage-note">Les créations anciennes déjà archivées sont signalées à partir de leur date de création. Les actions antérieures à l’ajout de ce journal ne peuvent pas être reconstituées.</p></div>
         <div id="clientsPanel" class="panel-body hidden">
-          <div class="section" id="clientListSection"><div class="section-head"><h2 class="section-title">Liste des clients</h2><span id="clientDirectoryCount" class="micro"></span></div><div class="client-import-box"><div><strong>Synchronisation VosFactures</strong><p>Récupère les fiches par pages et les met à jour dans le répertoire partagé.</p></div><button type="button" id="importVosFacturesBtn" class="mini-btn">Importer les clients</button></div><div id="vosFacturesImportStatus" class="client-import-status hidden" role="status" aria-live="polite"></div><p class="storage-note" style="margin:0 0 13px">Répertoire commun aux huit marques. Recherchez une société, son nom d’usage interne ou son numéro fiscal, puis choisissez la fiche à utiliser.</p><div class="client-toolbar"><input id="clientDirectorySearch" class="field" type="search" placeholder="Société, nom interne, n° fiscal, téléphone…" aria-label="Rechercher dans le répertoire"><select id="clientDirectorySort" class="field" aria-label="Trier les clients"><option value="name">Nom A → Z</option><option value="recent">Ajouts récents</option></select></div><div id="clientDirectoryList" class="archive-list" style="margin-top:13px"></div><button type="button" id="clientDirectoryMore" class="secondary-btn hidden" style="width:100%;margin-top:12px">Afficher plus de clients</button><p class="storage-note">Les proformas déjà enregistrées gardent une copie des coordonnées utilisées.</p></div>
+          <div class="section" id="clientListSection"><div class="section-head"><h2 class="section-title">Liste des clients</h2><span id="clientDirectoryCount" class="micro"></span></div><div class="client-import-box"><div><strong>Synchronisation VosFactures</strong><p>Récupère les fiches par pages et les met à jour dans le répertoire partagé.</p></div><button type="button" id="importVosFacturesBtn" class="mini-btn">Importer les clients</button></div><div id="vosFacturesImportStatus" class="client-import-status hidden" role="status" aria-live="polite"></div><p class="storage-note" style="margin:0 0 13px">Répertoire commun aux huit marques. Recherchez une société, son nom d’usage interne, son NCC ou son RCC, puis choisissez la fiche à utiliser.</p><div class="client-toolbar"><input id="clientDirectorySearch" class="field" type="search" placeholder="Société, nom interne, NCC, RCC, téléphone…" aria-label="Rechercher dans le répertoire"><select id="clientDirectorySort" class="field" aria-label="Trier les clients"><option value="name">Nom A → Z</option><option value="recent">Ajouts récents</option></select></div><div id="clientDirectoryList" class="archive-list" style="margin-top:13px"></div><button type="button" id="clientDirectoryMore" class="secondary-btn hidden" style="width:100%;margin-top:12px">Afficher plus de clients</button><p class="storage-note">Les proformas déjà enregistrées gardent une copie des coordonnées utilisées.</p></div>
 
 
         </div>
@@ -383,7 +383,7 @@
     const plusDays=(date,days)=>{if(!/^\d{4}-\d{2}-\d{2}$/.test(date||''))return '';const [y,m,d]=date.split('-').map(Number);const result=new Date(y,m-1,d+Number(days||0));return `${result.getFullYear()}-${String(result.getMonth()+1).padStart(2,'0')}-${String(result.getDate()).padStart(2,'0')}`};
     const numberValue=value=>Math.max(0,Math.round(Number(value)||0));
     const makeItem=()=>({id:`item-${Date.now()}-${Math.random().toString(36).slice(2,8)}`,reference:'',designation:'',qty:1,price:''});
-    const freshDraft=()=>({mode:'standard',clientCompany:'',clientContact:'',clientPhone:'',clientEmail:'',clientAddress:'',clientId:'',clientVisibility:{company:true,contact:true,phone:true,email:true,address:true},items:[makeItem()],turboClient:'',turboLabel:'',turboTtc:'',date:today(),validDays:15,issuePlace:'',docRef:'',deliveryDate:'',paymentDue:'',paymentMethod:'',deliveryTerms:'',vatRate:18,note:''});
+    const freshDraft=()=>({mode:'standard',clientCompany:'',clientContact:'',clientPhone:'',clientEmail:'',clientAddress:'',clientNcc:'',clientRcc:'',clientId:'',clientVisibility:{company:true,contact:true,phone:true,email:true,address:true,ncc:true,rcc:true},items:[makeItem()],turboClient:'',turboLabel:'',turboTtc:'',date:today(),validDays:15,issuePlace:'',docRef:'',deliveryDate:'',paymentDue:'',paymentMethod:'',deliveryTerms:'',vatRate:18,note:''});
     // Complète les anciens brouillons/archives sans effacer leurs données existantes.
     const normalizeDraft=data=>{
       const defaults=freshDraft();if(!data||typeof data!=='object')return defaults;
@@ -404,6 +404,8 @@
       company:String(record?.nom||'').trim(),
       contact:String(record?.contact||'').trim(),
       taxNumber:String(record?.numero_fiscal||'').trim(),
+      ncc:String(record?.numero_fiscal||record?.ncc||'').trim(),
+      rcc:String(record?.numero_registre||record?.register_number||record?.rcc||'').trim(),
       email:String(record?.emails||'').trim(),
       phone:String(record?.telephones||'').trim(),
       address:String(record?.address||'').trim(),
@@ -412,8 +414,16 @@
       _source:'supabase'
     });
     const CONTACT_PAGE_SIZE=1000;
-    const CONTACT_SELECT_FULL='id,nom,nom_usage_interne,numero_fiscal,emails,telephones,contact,address,created_at,updated_at';
-    const CONTACT_SELECT_LEGACY='id,nom,nom_usage_interne,numero_fiscal,emails,telephones,created_at,updated_at';
+    const CONTACT_SELECT_VARIANTS=[
+      {columns:'id,nom,nom_usage_interne,numero_fiscal,numero_registre,register_number,emails,telephones,contact,address,created_at,updated_at',hasDetails:true,hasRcc:true},
+      {columns:'id,nom,nom_usage_interne,numero_fiscal,numero_registre,emails,telephones,contact,address,created_at,updated_at',hasDetails:true,hasRcc:true},
+      {columns:'id,nom,nom_usage_interne,numero_fiscal,register_number,emails,telephones,contact,address,created_at,updated_at',hasDetails:true,hasRcc:true},
+      {columns:'id,nom,nom_usage_interne,numero_fiscal,emails,telephones,contact,address,created_at,updated_at',hasDetails:true,hasRcc:false},
+      {columns:'id,nom,nom_usage_interne,numero_fiscal,numero_registre,register_number,emails,telephones,created_at,updated_at',hasDetails:false,hasRcc:true},
+      {columns:'id,nom,nom_usage_interne,numero_fiscal,numero_registre,emails,telephones,created_at,updated_at',hasDetails:false,hasRcc:true},
+      {columns:'id,nom,nom_usage_interne,numero_fiscal,register_number,emails,telephones,created_at,updated_at',hasDetails:false,hasRcc:true},
+      {columns:'id,nom,nom_usage_interne,numero_fiscal,emails,telephones,created_at,updated_at',hasDetails:false,hasRcc:false}
+    ];
     const supabaseContactsReady=()=>Boolean(supabase&&currentUser&&contactsSource==='supabase'&&!contactsLoading);
     async function deleteContactFromSupabase(id){
       const {error}=await supabase.from('contacts').delete().eq('id',id);
@@ -475,25 +485,20 @@
       const token=++contactsLoadToken;
       contactsLoading=true;contactsError='';contactsSource='supabase';
       renderClientPicker();renderClientDirectory();
-      const contacts=[];let from=0;let loadError=null;let selectWithDetails=true;let legacySchemaNotice=false;
+      const contacts=[];let from=0;let loadError=null;let selectVariant=0;
       do{
-        const selectColumns=selectWithDetails?CONTACT_SELECT_FULL:CONTACT_SELECT_LEGACY;
-        let result=await supabase.from('contacts')
-          .select(selectColumns)
-          .order('nom',{ascending:true})
-          .order('id',{ascending:true})
-          .range(from,from+CONTACT_PAGE_SIZE-1);
-        if(token!==contactsLoadToken||currentUser?.id!==userId)return;
-        // Les anciennes bases n’ont pas encore forcément reçu contact/address.
-        // On conserve alors la consultation des fiches existantes et on indique
-        // dans l’interface qu’il faut exécuter contacts-write.sql pour enrichir le schéma.
-        if(result.error&&selectWithDetails&&/(?:column.*(?:contact|address).*does not exist|schema cache.*(?:contact|address)|could not find.*(?:contact|address))/i.test(String(result.error.message||''))){
-          selectWithDetails=false;legacySchemaNotice=true;
+        let result;
+        while(true){
+          const variant=CONTACT_SELECT_VARIANTS[selectVariant];
           result=await supabase.from('contacts')
-            .select(CONTACT_SELECT_LEGACY)
+            .select(variant.columns)
             .order('nom',{ascending:true})
             .order('id',{ascending:true})
             .range(from,from+CONTACT_PAGE_SIZE-1);
+          if(token!==contactsLoadToken||currentUser?.id!==userId)return;
+          const schemaError=/(?:column.*(?:contact|address|numero_registre|register_number).*does not exist|schema cache.*(?:contact|address|numero_registre|register_number)|could not find.*(?:contact|address|numero_registre|register_number))/i.test(String(result.error?.message||''));
+          if(!result.error||!schemaError||selectVariant>=CONTACT_SELECT_VARIANTS.length-1)break;
+          selectVariant++;
         }
         if(token!==contactsLoadToken||currentUser?.id!==userId)return;
         if(result.error){loadError=result.error;break}
@@ -517,8 +522,12 @@
       contactsSource='supabase';contactsError='';
       renderClientPicker();renderClientDirectory();renderDashboard();
       if(activeTab==='history')renderHistory();
-      toast(legacySchemaNotice
-        ? `${store.clients.length} contact${store.clients.length>1?'s':''} chargé${store.clients.length>1?'s':''}. Exécutez supabase/contacts-write.sql pour activer contact et address.`
+      const selectedVariant=CONTACT_SELECT_VARIANTS[selectVariant];
+      const missingFields=[];
+      if(!selectedVariant.hasDetails)missingFields.push('adresse/contact');
+      if(!selectedVariant.hasRcc)missingFields.push('RCC');
+      toast(missingFields.length
+        ? `${store.clients.length} contact${store.clients.length>1?'s':''} chargé${store.clients.length>1?'s':''}. Exécutez supabase/contacts-write.sql pour activer ${missingFields.join(' et ')}.`
         : `${store.clients.length} contact${store.clients.length>1?'s':''} chargé${store.clients.length>1?'s':''} depuis Supabase.`);
     }
     let store=readStore();let brand=BRANDS.find(b=>b.id===store.lastBrand)||BRANDS[0];let currentId=null;let draft=normalizeDraft(store.drafts[brand.id]);let activeTab='dashboard';let toastTimer;
@@ -647,7 +656,9 @@
       const clientDetails=hasClientInfo?[
         clientVisible('contact')&&draft.clientContact&&clientName()!==draft.clientContact?draft.clientContact:'',
         clientVisible('phone')?draft.clientPhone:'',clientVisible('email')?draft.clientEmail:'',
-        clientVisible('address')?draft.clientAddress:''
+        clientVisible('address')?draft.clientAddress:'',
+        clientVisible('ncc')&&draft.clientNcc?`NCC : ${draft.clientNcc}`:'',
+        clientVisible('rcc')&&draft.clientRcc?`RCC : ${draft.clientRcc}`:''
       ].filter(Boolean).map(esc).join('<br>'):'';
       const metaFields=[
         ['Lieu d’émission',draft.issuePlace],['Référence dossier',draft.docRef],
@@ -683,7 +694,7 @@
     function renderAll(){fillFields();renderTotals();renderDocument();renderArchive();renderDashboard();if(activeTab==='history')renderHistory()}
     function fillProfile(){const p=getProfile();$$('[data-profile]').forEach(el=>el.value=p[el.dataset.profile]??'');const image=$('#settingLogo');const customLogo=safeLogo(p.logo);image.src=customLogo||DEFAULT_LOGOS[brand.id];image.classList.toggle('square-preview',!customLogo&&['maginfo','entreprise'].includes(brand.id));$('#removeLogo').disabled=!customLogo;$('[data-profile="color"]').disabled=brand.id==='starlink';$('#profileSource').textContent=`Source des coordonnées : ${SITE_IDENTITIES[brand.id].source} · relevé du 01/10/2026. Vérifiez le nom légal et les coordonnées avant l’envoi. Les coordonnées bancaires préremplies proviennent de vos indications, pas de ces sites.${brand.id==='starlink'?' Palette noire fixe pour Starlink CI.':''}`}
     // Répertoire partagé : une fiche du répertoire n'est copiée dans la proforma qu'à sa sélection.
-    const CLIENT_KEYS=['company','contact','phone','email','address']; // Uniquement les coordonnées copiées sur la proforma.
+    const CLIENT_KEYS=['company','contact','phone','email','address','ncc','rcc']; // Coordonnées et identifiants copiés sur la proforma.
     const normalizeText=value=>String(value??'').trim().toLocaleLowerCase('fr').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ');
     const clientFullName=client=>client.company||client.contact||client.usageName||'Client sans nom';
     const clientUUID=()=>typeof crypto!=='undefined'&&crypto.randomUUID?crypto.randomUUID():`client-${Date.now()}-${Math.random().toString(36).slice(2)}`;
@@ -693,7 +704,7 @@
       const matches=[...store.clients]
         .filter(c=>{
           if(!query)return true;
-          const searchable=normalizeText(`${c.company||''} ${c.contact||''} ${c.usageName||''} ${c.taxNumber||''} ${c.phone||''} ${c.email||''} ${c.address||''}`);
+          const searchable=normalizeText(`${c.company||''} ${c.contact||''} ${c.usageName||''} ${c.taxNumber||''} ${c.ncc||''} ${c.rcc||''} ${c.phone||''} ${c.email||''} ${c.address||''}`);
           return searchable.includes(query)||(queryDigits.length>=3&&String(c.phone||'').replace(/\D/g,'').includes(queryDigits));
         })
         .sort((a,b)=>clientFullName(a).localeCompare(clientFullName(b),'fr'));
@@ -705,7 +716,7 @@
       const results=$('#clientPickerResults');
       results.classList.toggle('hidden',!query);
       if(query){
-        results.innerHTML=matches.length?matches.slice(0,20).map(c=>`<button type="button" class="client-picker-option" data-quick-client-id="${esc(c.id)}"><strong>${esc(clientFullName(c))}</strong><small>${[c.usageName&&normalizeText(c.usageName)!==normalizeText(clientFullName(c))?'Nom interne : '+c.usageName:'',c.taxNumber?'N° fiscal : '+c.taxNumber:'',c.phone,c.email].filter(Boolean).map(esc).join(' · ')||'Cliquez pour utiliser cette fiche'}</small></button>`).join('')+(matches.length>20?'<div class="client-picker-empty">Affinez votre recherche pour voir les autres résultats.</div>':'')
+        results.innerHTML=matches.length?matches.slice(0,20).map(c=>`<button type="button" class="client-picker-option" data-quick-client-id="${esc(c.id)}"><strong>${esc(clientFullName(c))}</strong><small>${[c.usageName&&normalizeText(c.usageName)!==normalizeText(clientFullName(c))?'Nom interne : '+c.usageName:'',c.taxNumber?'NCC : '+c.taxNumber:'',c.rcc?'RCC : '+c.rcc:'',c.phone,c.email].filter(Boolean).map(esc).join(' · ')||'Cliquez pour utiliser cette fiche'}</small></button>`).join('')+(matches.length>20?'<div class="client-picker-empty">Affinez votre recherche pour voir les autres résultats.</div>':'')
           :'<div class="client-picker-empty">Aucun client trouvé. Vérifiez l’orthographe ou synchronisez les fiches depuis VosFactures dans l’onglet Clients.</div>';
       }else results.innerHTML='';
       const selection=selectedClient?`Fiche actuellement choisie : ${clientFullName(selectedClient)}. `:'';
@@ -728,11 +739,11 @@
     function renderClientDirectory(){
       const query=normalizeText($('#clientDirectorySearch').value),sort=$('#clientDirectorySort').value;
       const matches=[...store.clients]
-        .filter(c=>normalizeText(`${c.company} ${c.contact} ${c.usageName||''} ${c.taxNumber||''} ${c.phone} ${c.email} ${c.address}`).includes(query))
+        .filter(c=>normalizeText(`${c.company} ${c.contact} ${c.usageName||''} ${c.taxNumber||''} ${c.ncc||''} ${c.rcc||''} ${c.phone} ${c.email} ${c.address}`).includes(query))
         .sort((a,b)=>sort==='recent'?String(b.createdAt||'').localeCompare(String(a.createdAt||'')):clientFullName(a).localeCompare(clientFullName(b),'fr'));
       const source=contactsLoading?' · Chargement Supabase':contactsSource==='supabase'?' · Supabase':contactsSource==='fallback'?' · Répertoire local':'';
       $('#clientDirectoryCount').textContent=`${matches.length} / ${store.clients.length} client${store.clients.length>1?'s':''}${source}`;
-      $('#clientDirectoryList').innerHTML=matches.length?matches.slice(0,clientsShown).map(c=>`<div class="client-card"><div class="client-card-title">${esc(clientFullName(c))}</div><div class="client-card-meta">${[c.usageName?'Nom interne : '+c.usageName:'',c.taxNumber?'N° fiscal : '+c.taxNumber:'',c.company&&c.contact?'Contact : '+c.contact:'',c.phone,c.email,c.address].filter(Boolean).map(esc).join(' · ')||'Aucune autre coordonnée'}</div><div class="history-meta">Ajouté ${esc(formatDateTime(c.createdAt))}${c.updatedAt&&c.updatedAt!==c.createdAt?' · Modifié '+esc(formatDateTime(c.updatedAt)):''}</div><div class="client-card-actions"><button type="button" class="mini-btn" data-client-action="use" data-client-id="${esc(c.id)}">Utiliser sur la proforma</button><button type="button" class="mini-btn danger" data-client-action="delete" data-client-id="${esc(c.id)}">Supprimer</button></div></div>`).join(''):'<div class="empty-state">Aucun client trouvé dans le répertoire Supabase.</div>';
+      $('#clientDirectoryList').innerHTML=matches.length?matches.slice(0,clientsShown).map(c=>`<div class="client-card"><div class="client-card-title">${esc(clientFullName(c))}</div><div class="client-card-meta">${[c.usageName?'Nom interne : '+c.usageName:'',c.taxNumber?'NCC : '+c.taxNumber:'',c.rcc?'RCC : '+c.rcc:'',c.company&&c.contact?'Contact : '+c.contact:'',c.phone,c.email,c.address].filter(Boolean).map(esc).join(' · ')||'Aucune autre coordonnée'}</div><div class="history-meta">Ajouté ${esc(formatDateTime(c.createdAt))}${c.updatedAt&&c.updatedAt!==c.createdAt?' · Modifié '+esc(formatDateTime(c.updatedAt)):''}</div><div class="client-card-actions"><button type="button" class="mini-btn" data-client-action="use" data-client-id="${esc(c.id)}">Utiliser sur la proforma</button><button type="button" class="mini-btn danger" data-client-action="delete" data-client-id="${esc(c.id)}">Supprimer</button></div></div>`).join(''):'<div class="empty-state">Aucun client trouvé dans le répertoire Supabase.</div>';
       $('#clientDirectoryMore').classList.toggle('hidden',matches.length<=clientsShown);
       $('#clientDirectoryMore').textContent=`Afficher plus de clients (${Math.min(matches.length-clientsShown,100)} suivants)`;
     }
@@ -807,7 +818,7 @@
     }
     function updateProfile(key,value){if(brand.id==='starlink'&&key==='color')return;const p=getProfile();p[key]=value;store.profiles[brand.id]={...p,_identityVersion:PROFILE_VERSION};persist();renderDocument();if(key==='color'){applyBrand();fillProfile()}}
     // Événements délégués : aucune perte du curseur pendant la mise à jour de l'aperçu.
-    document.addEventListener('input',event=>{const el=event.target;if(el.matches('[data-field]')){draft[el.dataset.field]=el.value;if(el.dataset.field==='turboClient'&&draft.clientId){draft.clientId='';['clientCompany','clientContact','clientPhone','clientEmail','clientAddress'].forEach(key=>draft[key]='');renderClientPicker()}syncDraft();renderTotals();renderDocument()}else if(el.matches('[data-item-field]')){const id=el.closest('[data-item-id]')?.dataset.itemId;const item=draft.items.find(i=>i.id===id);if(!item)return;item[el.dataset.itemField]=el.value;syncDraft();renderTotals();renderDocument()}else if(el.matches('[data-profile]')){updateProfile(el.dataset.profile,el.value)}});
+    document.addEventListener('input',event=>{const el=event.target;if(el.matches('[data-field]')){draft[el.dataset.field]=el.value;if(el.dataset.field==='turboClient'&&draft.clientId){draft.clientId='';['clientCompany','clientContact','clientPhone','clientEmail','clientAddress','clientNcc','clientRcc'].forEach(key=>draft[key]='');renderClientPicker()}syncDraft();renderTotals();renderDocument()}else if(el.matches('[data-item-field]')){const id=el.closest('[data-item-id]')?.dataset.itemId;const item=draft.items.find(i=>i.id===id);if(!item)return;item[el.dataset.itemField]=el.value;syncDraft();renderTotals();renderDocument()}else if(el.matches('[data-profile]')){updateProfile(el.dataset.profile,el.value)}});
     const PROFILE_EVENT_FIELDS={company:'Nom de l’émetteur',address:'Adresse',phone:'Téléphone',whatsapp:'WhatsApp',email:'E-mail',color:'Couleur',rib:'Coordonnées bancaires',bic:'BIC',iban:'IBAN'};
     document.addEventListener('focusin',event=>{if(event.target.matches('[data-profile]'))event.target.dataset.beforeValue=event.target.value});
     document.addEventListener('change',event=>{

@@ -407,6 +407,8 @@
       _source:'supabase'
     });
     const CONTACT_PAGE_SIZE=1000;
+    const CONTACT_SELECT_FULL='id,nom,nom_usage_interne,numero_fiscal,emails,telephones,contact,address,created_at,updated_at';
+    const CONTACT_SELECT_LEGACY='id,nom,nom_usage_interne,numero_fiscal,emails,telephones,created_at,updated_at';
     const supabaseContactsReady=()=>Boolean(supabase&&currentUser&&contactsSource==='supabase'&&!contactsLoading);
     async function deleteContactFromSupabase(id){
       const {error}=await supabase.from('contacts').delete().eq('id',id);
@@ -468,16 +470,29 @@
       const token=++contactsLoadToken;
       contactsLoading=true;contactsError='';contactsSource='supabase';
       renderClientPicker();renderClientDirectory();
-      const contacts=[];let from=0;let loadError=null;
+      const contacts=[];let from=0;let loadError=null;let selectWithDetails=true;let legacySchemaNotice=false;
       do{
-        const {data,error}=await supabase.from('contacts')
-          .select('id,nom,nom_usage_interne,numero_fiscal,emails,telephones,contact,address,created_at,updated_at')
+        const selectColumns=selectWithDetails?CONTACT_SELECT_FULL:CONTACT_SELECT_LEGACY;
+        let result=await supabase.from('contacts')
+          .select(selectColumns)
           .order('nom',{ascending:true})
           .order('id',{ascending:true})
           .range(from,from+CONTACT_PAGE_SIZE-1);
         if(token!==contactsLoadToken||currentUser?.id!==userId)return;
-        if(error){loadError=error;break}
-        const page=Array.isArray(data)?data:[];
+        // Les anciennes bases n’ont pas encore forcément reçu contact/address.
+        // On conserve alors la consultation des fiches existantes et on indique
+        // dans l’interface qu’il faut exécuter contacts-write.sql pour enrichir le schéma.
+        if(result.error&&selectWithDetails&&/(?:column.*(?:contact|address).*does not exist|schema cache.*(?:contact|address)|could not find.*(?:contact|address))/i.test(String(result.error.message||''))){
+          selectWithDetails=false;legacySchemaNotice=true;
+          result=await supabase.from('contacts')
+            .select(CONTACT_SELECT_LEGACY)
+            .order('nom',{ascending:true})
+            .order('id',{ascending:true})
+            .range(from,from+CONTACT_PAGE_SIZE-1);
+        }
+        if(token!==contactsLoadToken||currentUser?.id!==userId)return;
+        if(result.error){loadError=result.error;break}
+        const page=Array.isArray(result.data)?result.data:[];
         if(!page.length)break;
         contacts.push(...page);
         // Le serveur peut appliquer une limite plus basse que celle demandée.
@@ -490,14 +505,16 @@
         contactsSource='fallback';contactsError=String(loadError.message||loadError);
         console.error('Chargement des contacts Supabase impossible',loadError);
         renderClientPicker();renderClientDirectory();
-        toast('Les contacts Supabase sont indisponibles. Le répertoire local est affiché.');
+        toast('Les contacts Supabase sont indisponibles. Vérifiez la table contacts et ses politiques RLS.');
         return;
       }
       store.clients=contacts.map(normalizeContactRecord);
       contactsSource='supabase';contactsError='';
       renderClientPicker();renderClientDirectory();renderDashboard();
       if(activeTab==='history')renderHistory();
-      toast(`${store.clients.length} contact${store.clients.length>1?'s':''} chargé${store.clients.length>1?'s':''} depuis Supabase.`);
+      toast(legacySchemaNotice
+        ? `${store.clients.length} contact${store.clients.length>1?'s':''} chargé${store.clients.length>1?'s':''}. Exécutez supabase/contacts-write.sql pour activer contact et address.`
+        : `${store.clients.length} contact${store.clients.length>1?'s':''} chargé${store.clients.length>1?'s':''} depuis Supabase.`);
     }
     let store=readStore();let brand=BRANDS.find(b=>b.id===store.lastBrand)||BRANDS[0];let currentId=null;let draft=normalizeDraft(store.drafts[brand.id]);let activeTab='dashboard';let toastTimer;
     function persist(){if(!storageAvailable)return true;try{localStorage.setItem(KEY,JSON.stringify(store));return true}catch(err){toast('Stockage local saturé ou indisponible. Libérez de l’espace (notamment les logos).');return false}}

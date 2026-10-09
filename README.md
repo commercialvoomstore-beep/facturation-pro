@@ -31,6 +31,7 @@ L'application s'ouvre sur un écran **Connexion / Inscription** : personne n'ent
 - La sélection d'une fiche copie ses coordonnées dans la proforma. Les brouillons, proformas, profils, archives et événements restent enregistrés dans le `localStorage`.
 - Le champ facultatif **Titre / objet de la proforma** est conservé dans les brouillons et les proformas enregistrées. Il s’affiche dans l’en-tête du document, sous « Facture proforma » et avant le numéro, par exemple : `INFRASTRUCTURE WI-FI PROFESSIONNELLE`. Les archives peuvent également être recherchées par ce titre.
 - Chaque ligne article possède désormais une **unité de vente** (`u`, `m`, `m²`, `m³`, `kg`, `h`, `jour` ou `forfait`). Les quantités mesurées acceptent les décimales et le document affiche `Qté / unité`; une ligne forfaitaire est calculée avec une quantité de 1 et affichée comme `Forfait`. Les anciennes lignes sans unité restent interprétées comme des unités (`u`).
+- Dans l’onglet **Éditeur**, les informations client et les articles restent à gauche, l’aperçu A4 se place au centre et le panneau **Conditions & total** se place à droite sur grand écran. Le panneau s’empile automatiquement sur les écrans plus étroits.
 
 ## Synchronisation VosFactures
 

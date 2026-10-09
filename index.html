@@ -444,10 +444,8 @@
     const itemUnitInfo=unit=>ITEM_UNITS.find(option=>option.value===unit)||ITEM_UNITS[0];
     const lineQuantityLabel=line=>line.unit==='forfait'?'Forfait':`${formatQuantity(line.qty)} ${itemUnitInfo(line.unit).display}`;
     const makeItem=()=>({id:`item-${Date.now()}-${Math.random().toString(36).slice(2,8)}`,reference:'',designation:'',qty:1,unit:'u',price:''});
-    const DEFAULT_DELIVERY_TERMS=`>> Délais de livraison
-Sous 10 à 15 jours ouvrables à compter du paiement par chèque ou Virement (à compter de la réception du règlement)`;
-    const DEFAULT_INVOICE_NOTE=`Informations spécifiques :
->>Modalité de Règlement accordée au client:
+    const DEFAULT_DELIVERY_TERMS=`Sous 10 à 15 jours ouvrables à compter du paiement par chèque ou Virement (à compter de la réception du règlement)`;
+    const DEFAULT_INVOICE_NOTE=`>>Modalité de Règlement accordée au client:
 Paiement intégral à la commande + Bon de commande (Cachet + signature)
 -------------------------------------------
 >> Tous nos règlements Acceptés
@@ -465,6 +463,8 @@ Une fois le bon de commande signée la vente est définitive et le client a l'ob
     const normalizeDraft=data=>{
       const defaults=freshDraft();if(!data||typeof data!=='object')return defaults;
       const result={...defaults,...data,clientVisibility:{...defaults.clientVisibility,...(data.clientVisibility||{})},items:Array.isArray(data.items)&&data.items.length?data.items.map(item=>{const normalized={...makeItem(),...item};return {...normalized,unit:itemUnitInfo(normalized.unit).value}}):defaults.items};
+      result.deliveryTerms=String(result.deliveryTerms||'').replace(/^>> Délais de livraison(?:\r?\n|\s)*/,'');
+      result.note=String(result.note||'').replace(/^Informations spécifiques :(?:\r?\n|\s)*/,'');
       // Les anciens modes de règlement retirés ne réapparaissent pas dans les archives.
       const allowed=['','Virement bancaire','Espèces','Chèque','Carte bancaire','Autre / à convenir'];
       if(!allowed.includes(result.paymentMethod))result.paymentMethod='';

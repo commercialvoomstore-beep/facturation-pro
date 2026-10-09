@@ -32,7 +32,7 @@ L'application s'ouvre sur un écran **Connexion / Inscription** : personne n'ent
 - Le champ facultatif **Titre / objet de la proforma** est conservé dans les brouillons et les proformas enregistrées. Il s’affiche dans l’en-tête du document, sous « Facture proforma » et avant le numéro, par exemple : `INFRASTRUCTURE WI-FI PROFESSIONNELLE`. Les archives peuvent également être recherchées par ce titre.
 - Chaque ligne article possède désormais une **unité de vente** (`u`, `m`, `m²`, `m³`, `kg`, `h`, `jour` ou `forfait`). Les quantités mesurées acceptent les décimales et le document affiche `Qté / unité`; une ligne forfaitaire est calculée avec une quantité de 1 et affichée comme `Forfait`. Les anciennes lignes sans unité restent interprétées comme des unités (`u`).
 - Dans l’onglet **Éditeur**, les informations client et les articles restent à gauche, l’aperçu A4 se place au centre et le panneau **Conditions & total** se place à droite sur grand écran. Le panneau s’empile automatiquement sur les écrans plus étroits.
-- Le bloc final du document affiche désormais le montant **À payer** avec deux décimales en chiffres, puis sa valeur en toutes lettres sous le montant, avec une taille de texte réduite et un retour à la ligne automatique.
+- Le bloc final du document affiche désormais le montant entier **À payer** en francs CFA, puis sa valeur en toutes lettres sous le montant, sans centimes, avec une taille de texte réduite et un retour à la ligne automatique.
 
 ## Synchronisation VosFactures
 

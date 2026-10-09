@@ -382,7 +382,7 @@
     const clone=value=>JSON.parse(JSON.stringify(value));
     const digits=value=>new Intl.NumberFormat('fr-FR',{maximumFractionDigits:0}).format(Number(value)||0);
     const money=value=>`${digits(value)} FCFA`;
-    const moneyWithCents=value=>`${new Intl.NumberFormat('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2}).format(Math.max(0,Number(value)||0))} Franc CFA`;
+    const payableMoney=value=>`${digits(value)} Franc CFA`;
     const frenchUnderTwenty=['zéro','un','deux','trois','quatre','cinq','six','sept','huit','neuf','dix','onze','douze','treize','quatorze','quinze','seize'];
     const frenchTens={2:'vingt',3:'trente',4:'quarante',5:'cinquante',6:'soixante'};
     function frenchUnderHundred(value,pluralEighty=true){
@@ -419,12 +419,9 @@
       return parts.join(' ');
     }
     const amountInWords=value=>{
-      const rounded=Math.max(0,Math.round((Number(value)||0)*100)/100);
-      let integer=Math.floor(rounded),cents=Math.round((rounded-integer)*100);
-      if(cents===100){integer+=1;cents=0}
+      const integer=Math.max(0,Math.round(Number(value)||0));
       const currency=integer===1?'franc CFA':'francs CFA';
-      const centsLabel=cents===1?'centime':cents>1?'centimes':'centime';
-      return `${frenchIntegerWords(integer)} ${currency} ${frenchIntegerWords(cents)} ${centsLabel}`;
+      return `${frenchIntegerWords(integer)} ${currency}`;
     };
     const colorOK=value=>/^#[0-9a-fA-F]{6}$/.test(value||'');
     const safeLogo=value=>typeof value==='string' && /^data:image\/(png|jpeg|webp);base64,[a-zA-Z0-9+/=]+$/.test(value) ? value : '';
@@ -754,7 +751,7 @@
       <div class="paper-addresses"><div class="address-cell"><div class="block-label">Émetteur</div><div class="address-name">${esc(companyName)}</div><div class="address-copy">${esc(p.address||'Adresse à renseigner')}</div></div><div class="address-cell"><div class="block-label">Destinataire</div><div class="address-name">${esc(clientName())}</div><div class="address-copy">${clientDetails||(!clientLegalIds&&clientName()==='Client à renseigner'?'Informations complémentaires à renseigner':'')}</div>${clientLegalIds?`<div class="client-legal-ids" aria-label="Identifiants légaux du client">${clientLegalIds}</div>`:''}</div></div>
       ${metadata}<div class="table-currency">Montants en francs CFA · FCFA</div>
       <table class="doc-table"><thead><tr><th>Réf.</th><th>Désignation</th><th>Qté / unité</th><th>PU HT</th><th>Montant HT</th></tr></thead><tbody>${lines}</tbody></table>
-      <div class="doc-closure"><div class="doc-total-zone"><div class="doc-total-box"><div class="doc-total-line"><span>Sous-total HT</span><b>${money(t.ht)}</b></div><div class="doc-total-line"><span>TVA ${Number(draft.vatRate)===18?'18 %':'exonérée'}</span><b>${money(t.vat)}</b></div><div class="doc-total-grand payable-total" aria-label="Montant à payer en chiffres et en lettres"><div class="payable-main"><span class="payable-label">À payer</span><b class="payable-amount">${moneyWithCents(t.ttc)}</b></div><div class="payable-words">${esc(amountInWords(t.ttc))}</div></div></div></div>
+      <div class="doc-closure"><div class="doc-total-zone"><div class="doc-total-box"><div class="doc-total-line"><span>Sous-total HT</span><b>${money(t.ht)}</b></div><div class="doc-total-line"><span>TVA ${Number(draft.vatRate)===18?'18 %':'exonérée'}</span><b>${money(t.vat)}</b></div><div class="doc-total-grand payable-total" aria-label="Montant à payer en chiffres et en lettres"><div class="payable-main"><span class="payable-label">À payer</span><b class="payable-amount">${payableMoney(t.ttc)}</b></div><div class="payable-words">${esc(amountInWords(t.ttc))}</div></div></div></div>
       <div class="doc-bottom"><div class="payment-box"><div><div class="block-label">Virement bancaire · RIB / IBAN</div><div class="payment-copy">${esc(bankInfo||'Coordonnées bancaires à renseigner')}</div></div></div>${notes}<div class="doc-footer"><span>Proforma non acquittée · ne vaut pas facture définitive.</span><span>${esc(brand.domain)} · ${esc(displayNumber())}</span></div></div></div>`;
       $('#toolbarNumber').textContent=`${displayNumber()}${getRecord()?'':' · brouillon'}`;
       const savedRecord=getRecord();

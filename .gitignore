@@ -2,3 +2,7 @@
 node_modules/
 uploads/
 *.log
+
+__pycache__/
+*.py[cod]
+exports/

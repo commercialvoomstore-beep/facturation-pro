@@ -28,7 +28,7 @@ L'application s'ouvre sur un écran **Connexion / Inscription** : personne n'ent
 - Pour autoriser la lecture, la suppression et la synchronisation depuis le répertoire partagé, exécutez `supabase/contacts-write.sql` dans **Supabase → SQL Editor**. Ce script ajoute les colonnes d’origine externe, crée l’unicité `(source, external_id)` et donne aux utilisateurs authentifiés les droits RLS nécessaires. Il n’utilise pas de clé `service_role`.
 - Les fiches affichées sont lues depuis `public.contacts`. Depuis la plateforme, elles peuvent être sélectionnées pour une proforma ou supprimées du répertoire. Dans l’éditeur standard, un nouveau client peut être utilisé uniquement sur la proforma ou enregistré explicitement dans le répertoire commun ; la modification manuelle d’une fiche existante reste désactivée.
 - L’enregistrement contextuel écrit `source = manual`, sans `external_id`, et mappe `clientCompany` vers `nom`, `clientContact` vers `contact`, `clientPhone` vers `telephones`, `clientEmail` vers `emails`, `clientAddress` vers `address`, `clientNcc` vers `numero_fiscal` et `clientRcc` vers `numero_registre` / `register_number`. Une vérification des doublons par NCC, RCC, e-mail, téléphone ou nom est effectuée avant l’insertion.
-- La sélection d'une fiche copie ses coordonnées dans la proforma. Les brouillons, proformas, profils, archives et événements restent enregistrés dans le `localStorage`.
+- La sélection d'une fiche copie ses coordonnées dans la proforma. Les brouillons et les identités personnalisées restent conservés localement ; les proformas enregistrées et les événements d’historique sont synchronisés dans Supabase après exécution de `supabase/proformas-history.sql`. En cas d’indisponibilité de la base, l’interface conserve temporairement un cache local.
 - Le champ facultatif **Titre / objet de la proforma** est conservé dans les brouillons et les proformas enregistrées. Il s’affiche dans l’en-tête du document, sous « Facture proforma » et avant le numéro, par exemple : `INFRASTRUCTURE WI-FI PROFESSIONNELLE`. Les archives peuvent également être recherchées par ce titre.
 - Chaque ligne article possède désormais une **unité de vente** (`u`, `m`, `m²`, `m³`, `kg`, `h`, `jour` ou `forfait`). Les quantités mesurées acceptent les décimales et le document affiche `Qté / unité`; une ligne forfaitaire est calculée avec une quantité de 1 et affichée comme `Forfait`. Les anciennes lignes sans unité restent interprétées comme des unités (`u`).
 - Dans l’onglet **Éditeur**, les informations client et les articles restent à gauche, l’aperçu A4 se place au centre et le panneau **Conditions & total** se place à droite sur grand écran. Le panneau s’empile automatiquement sur les écrans plus étroits.
@@ -56,6 +56,12 @@ Avant le premier import :
 
 La route serveur vérifie d’abord la session Supabase de l’utilisateur. Elle utilise la clé anon et le JWT utilisateur pour écrire avec RLS ; aucune clé `service_role` n’est nécessaire ni exposée au navigateur. Le token VosFactures n’est utilisé que côté serveur et n’est pas renvoyé dans la réponse.
 
+## Archives et historique Supabase
+
+Pour rendre l’onglet **Archives** et l’onglet **Historique** persistants, exécutez `supabase/proformas-history.sql` dans **Supabase → SQL Editor**. Le script crée les tables `public.proformas`, `public.activity_events` et le compteur sécurisé des numéros par utilisateur, puis active les politiques RLS. Les archives sont privées par compte utilisateur ; les événements d’historique sont en lecture seule pour l’utilisateur et ne peuvent pas être supprimés depuis l’application. Les brouillons non enregistrés restent locaux.
+
+Lors de la première connexion après l’installation du script, les proformas et événements déjà présents dans le `localStorage` du navigateur sont importés dans le compte connecté avec une source de migration. Les proformas enregistrées ensuite utilisent Supabase comme source principale ; une indisponibilité temporaire active seulement le mode local de secours.
+
 ## Export Excel ou SQL local
 
 Si vous préférez générer un fichier à importer manuellement dans Supabase, utilisez `tools/export_vosfactures_clients.py`. Il utilise uniquement la bibliothèque standard Python et produit un fichier `.xlsx`, un script SQL, ou les deux :
@@ -71,7 +77,7 @@ Le script récupère toutes les pages, s’arrête lorsqu’une page contient mo
 
 ## Données et confidentialité
 
-Les contacts affichés depuis `public.contacts` sont stockés dans Supabase. Les brouillons, identités personnalisées, archives et l'historique restent dans le `localStorage` du navigateur utilisé, **pas dans ce dépôt**. Ils ne sont ni synchronisés entre appareils ni transférés automatiquement en passant d'un fichier local à un site hébergé. Une suppression des données du navigateur peut effacer les données locales.
+Les contacts affichés depuis `public.contacts`, les proformas enregistrées et les événements d’historique sont stockés dans Supabase. Les brouillons et identités personnalisées utilisent encore le `localStorage` comme cache local. Les archives et l’historique sont associés au compte connecté et peuvent être retrouvés depuis un autre appareil après exécution de `supabase/proformas-history.sql`. Une suppression des données du navigateur peut effacer les brouillons locaux, mais ne supprime pas les données déjà synchronisées dans Supabase.
 
 Le fichier HTML contient les identités et coordonnées bancaires par défaut destinées à apparaître sur les proformas. **Si le dépôt GitHub est public, ces valeurs le sont également.** Vérifiez leur exactitude et leur attribution à chaque marque avant utilisation.
 

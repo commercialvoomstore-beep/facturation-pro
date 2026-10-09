@@ -285,8 +285,8 @@
             <div class="section"><div class="section-head"><h2 class="section-title"><span class="section-num">02</span> Saisie express</h2></div><div class="input-grid"><label class="input-wrap full"><span class="field-label">Client</span><input class="field" data-field="turboClient" placeholder="Entreprise ou nom du client"></label><label class="input-wrap full"><span class="field-label">Libellé global</span><input class="field" data-field="turboLabel" placeholder="Ex. Fourniture et installation informatique"></label><label class="input-wrap full"><span class="field-label">Montant total TTC (FCFA)</span><input class="field" data-field="turboTtc" type="number" min="0" step="1" inputmode="numeric" placeholder="Ex. 118000"></label></div></div>
           </div>
         </div>
-        <div id="archivePanel" class="panel-body hidden"><div class="section-head"><h2 class="section-title">Proformas enregistrées</h2><span class="micro" id="archiveBrand"></span></div><div class="archive-toolbar"><input id="archiveSearch" class="field" type="search" placeholder="Rechercher client ou numéro…" aria-label="Rechercher les proformas"></div><div class="archive-count" id="archiveCount"></div><div class="archive-list" id="archiveList"></div><p class="storage-note">Les archives sont stockées uniquement dans ce navigateur, sur cet appareil.</p></div>
-        <div id="historyPanel" class="panel-body hidden"><div class="section-head"><h2 class="section-title">Historique d’activité</h2><span id="historyCount" class="micro"></span></div><p class="storage-note history-intro">Créations, modifications et suppressions enregistrées sur cet appareil. Les clients sont partagés entre les marques. Les frappes et brouillons ne sont pas journalisés ; aucun compte utilisateur n’identifie la personne qui agit.</p><div class="history-filters"><input id="historySearch" class="field" type="search" placeholder="Numéro, client ou action…" aria-label="Rechercher dans l’historique"><select id="historyScope" class="field" aria-label="Périmètre de l’historique"><option value="all">Toutes les marques</option><option value="brand">Marque active</option></select><select id="historyType" class="field" aria-label="Type d’action"><option value="all">Toutes les actions</option><option value="invoice">Proformas</option><option value="client">Clients</option><option value="identity">Identités</option></select></div><div id="historyList" class="history-list"></div><button type="button" id="historyMore" class="secondary-btn hidden" style="width:100%;margin-top:12px">Afficher plus d’actions</button><p class="storage-note">Les créations anciennes déjà archivées sont signalées à partir de leur date de création. Les actions antérieures à l’ajout de ce journal ne peuvent pas être reconstituées.</p></div>
+        <div id="archivePanel" class="panel-body hidden"><div class="section-head"><h2 class="section-title">Proformas enregistrées</h2><span class="micro" id="archiveBrand"></span></div><div class="archive-toolbar"><input id="archiveSearch" class="field" type="search" placeholder="Rechercher client ou numéro…" aria-label="Rechercher les proformas"></div><div class="archive-count" id="archiveCount"></div><div class="archive-list" id="archiveList"></div><p class="storage-note">Après exécution de <code>supabase/proformas-history.sql</code>, les archives sont enregistrées dans Supabase et restent accessibles sur vos appareils. En cas d’indisponibilité de la base, un cache local temporaire est utilisé.</p></div>
+        <div id="historyPanel" class="panel-body hidden"><div class="section-head"><h2 class="section-title">Historique d’activité</h2><span id="historyCount" class="micro"></span></div><p class="storage-note history-intro">Créations, modifications et suppressions enregistrées dans Supabase après exécution de <code>supabase/proformas-history.sql</code>. Les clients sont partagés entre les marques. Les frappes et brouillons ne sont pas journalisés ; les actions sont associées au compte connecté. En cas d’indisponibilité de la base, un cache local temporaire est utilisé.</p><div class="history-filters"><input id="historySearch" class="field" type="search" placeholder="Numéro, client ou action…" aria-label="Rechercher dans l’historique"><select id="historyScope" class="field" aria-label="Périmètre de l’historique"><option value="all">Toutes les marques</option><option value="brand">Marque active</option></select><select id="historyType" class="field" aria-label="Type d’action"><option value="all">Toutes les actions</option><option value="invoice">Proformas</option><option value="client">Clients</option><option value="identity">Identités</option></select></div><div id="historyList" class="history-list"></div><button type="button" id="historyMore" class="secondary-btn hidden" style="width:100%;margin-top:12px">Afficher plus d’actions</button><p class="storage-note">Les créations anciennes déjà archivées sont signalées à partir de leur date de création. Les actions antérieures à l’ajout de ce journal ne peuvent pas être reconstituées.</p></div>
         <div id="clientsPanel" class="panel-body hidden">
           <div class="section" id="clientListSection"><div class="section-head"><h2 class="section-title">Liste des clients</h2><span id="clientDirectoryCount" class="micro"></span></div><div class="client-import-box"><div><strong>Synchronisation VosFactures</strong><p>Récupère les fiches par pages et les met à jour dans le répertoire partagé.</p></div><button type="button" id="importVosFacturesBtn" class="mini-btn">Importer les clients</button></div><div id="vosFacturesImportStatus" class="client-import-status hidden" role="status" aria-live="polite"></div><p class="storage-note" style="margin:0 0 13px">Répertoire commun aux huit marques. Recherchez une société, son nom d’usage interne, son NCC ou son RCC, puis choisissez la fiche à utiliser. Pour enregistrer un nouveau client, passez par l’éditeur pendant la création d’une proforma.</p><div class="client-toolbar"><input id="clientDirectorySearch" class="field" type="search" placeholder="Société, nom interne, NCC, RCC, téléphone…" aria-label="Rechercher dans le répertoire"><select id="clientDirectorySort" class="field" aria-label="Trier les clients"><option value="name">Nom A → Z</option><option value="recent">Ajouts récents</option></select></div><div id="clientDirectoryList" class="archive-list" style="margin-top:13px"></div><button type="button" id="clientDirectoryMore" class="secondary-btn hidden" style="width:100%;margin-top:12px">Afficher plus de clients</button><p class="storage-note">Les proformas déjà enregistrées gardent une copie des coordonnées utilisées.</p></div>
 
@@ -457,7 +457,7 @@
     const BANK_DEFAULTS={rib:'CORIS BANK',bic:'CORICIAB',iban:'CI93 C116 6010 2901 1410 0241 0128'};
     const freshProfile=brand=>{const data=SITE_IDENTITIES[brand.id];return {company:data.company,address:data.address,phone:data.phone,whatsapp:data.whatsapp,email:data.email,...BANK_DEFAULTS,logo:'',color:brand.color}};
     const storageAvailable=(()=>{try{const probe='__proforma_storage_probe__';localStorage.setItem(probe,'1');localStorage.removeItem(probe);return true}catch{return false}})();
-    function readStore(){try{const data=JSON.parse(localStorage.getItem(KEY)||'{}');return {profiles:data.profiles||{},drafts:data.drafts||{},invoices:Array.isArray(data.invoices)?data.invoices:[],clients:Array.isArray(data.clients)?data.clients:[],events:Array.isArray(data.events)?data.events:[],counters:data.counters||{},lastBrand:data.lastBrand||'voom'}}catch{return {profiles:{},drafts:{},invoices:[],clients:[],events:[],counters:{},lastBrand:'voom'}}}
+    function readStore(){try{const data=JSON.parse(localStorage.getItem(KEY)||'{}');return {profiles:data.profiles||{},drafts:data.drafts||{},invoices:Array.isArray(data.invoices)?data.invoices:[],clients:Array.isArray(data.clients)?data.clients:[],events:Array.isArray(data.events)?data.events:[],counters:data.counters||{},lastBrand:data.lastBrand||'voom',remoteOwnerId:String(data.remoteOwnerId||'')}}catch{return {profiles:{},drafts:{},invoices:[],clients:[],events:[],counters:{},lastBrand:'voom',remoteOwnerId:''}}}
     let contactsSource='local',contactsLoading=false,contactsError='',contactsLoadToken=0,vosFacturesImporting=false,clientSaving=false,clientSaveNotice='',clientSaveNoticeState='info';
     const normalizeContactRecord=record=>({
       id:String(record?.id||clientUUID()),
@@ -593,6 +593,154 @@
     }
     let store=readStore();let brand=BRANDS.find(b=>b.id===store.lastBrand)||BRANDS[0];let currentId=null;let draft=normalizeDraft(store.drafts[brand.id]);let activeTab='dashboard';let toastTimer;
     function persist(){if(!storageAvailable)return true;try{localStorage.setItem(KEY,JSON.stringify(store));return true}catch(err){toast('Stockage local saturé ou indisponible. Libérez de l’espace (notamment les logos).');return false}}
+    let remoteDataSource='local',remoteDataLoading=false,remoteDataError='',remoteDataLoadToken=0;
+    const remoteActivityJobs=new Map();
+    const REMOTE_PROFORMA_COLUMNS='id,user_id,brand_id,number,status,issue_date,data,amount,profile_snapshot,legacy_id,created_at,updated_at,deleted_at';
+    const REMOTE_EVENT_COLUMNS='id,user_id,brand_id,event_type,entity_type,entity_id,entity_number,client_label,amount,details,source,source_event_id,occurred_at,created_at';
+    const isUuid=value=>/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(value||''));
+    const safeIso=value=>{const time=Date.parse(value||'');return Number.isFinite(time)?new Date(time).toISOString():new Date().toISOString()};
+    const remoteBusinessReady=()=>Boolean(supabase&&currentUser&&remoteDataSource==='supabase'&&!remoteDataLoading);
+    const remoteErrorText=error=>String(error?.message||error||'Erreur Supabase inconnue.');
+    const remoteSchemaError=error=>/(?:does not exist|schema cache|could not find|relation .*not found|column .*missing|function .*not found)/i.test(remoteErrorText(error));
+    function normalizeRemoteProforma(row){
+      const data=normalizeDraft(row?.data||{});
+      return {id:String(row.id),number:String(row.number||''),brandId:String(row.brand_id||''),data,amount:Number(row.amount)||0,profileSnapshot:row.profile_snapshot&&typeof row.profile_snapshot==='object'?row.profile_snapshot:{},createdAt:safeIso(row.created_at),updatedAt:safeIso(row.updated_at||row.created_at),legacyId:String(row.legacy_id||''),remote:true};
+    }
+    function normalizeRemoteEvent(row){
+      const details=row?.details&&typeof row.details==='object'?row.details:{};
+      return {id:String(row.source_event_id||row.id),type:String(row.event_type||'activity.logged'),at:safeIso(row.occurred_at||row.created_at),brandId:row.brand_id?String(row.brand_id):'',invoiceId:row.entity_type==='proforma'&&row.entity_id?String(row.entity_id):undefined,clientId:row.entity_type==='client'&&row.entity_id?String(row.entity_id):undefined,number:String(row.entity_number||''),client:String(row.client_label||''),amount:row.amount===null||row.amount===undefined?undefined:Number(row.amount),note:details.note?String(details.note):'',field:details.field?String(details.field):'',legacy:Boolean(details.legacy),remote:true};
+    }
+    const eventEntityType=type=>type.startsWith('invoice.')?'proforma':type.startsWith('client.')?'client':type.startsWith('identity.')?'identity':'other';
+    function remoteActivityRow(event,source='web',userId=currentUser?.id){
+      const amount=event.amount===undefined||event.amount===null||event.amount===''?null:Number(event.amount);
+      const details=Object.fromEntries(Object.entries({note:event.note,field:event.field,legacy:event.legacy||undefined}).filter(([,value])=>value!==undefined&&value!==''));
+      return {user_id:userId,brand_id:event.brandId||null,event_type:String(event.type||'activity.logged'),entity_type:eventEntityType(String(event.type||'')),entity_id:event.invoiceId||event.clientId?String(event.invoiceId||event.clientId):null,entity_number:event.number?String(event.number):null,client_label:event.client?String(event.client):null,amount:Number.isFinite(amount)?amount:null,details,source,source_event_id:event.id?String(event.id):null,occurred_at:safeIso(event.at)};
+    }
+    async function saveRemoteActivity(event,source='web'){
+      if(!supabase||!currentUser||!event)return null;
+      const {error}=await supabase.from('activity_events').insert(remoteActivityRow(event,source));
+      if(error&&String(error.code||'')!=='23505')throw error;
+      return event;
+    }
+    async function insertRemoteActivityRows(rows){
+      if(!rows.length)return;
+      const {error}=await supabase.from('activity_events').insert(rows);
+      if(!error)return;
+      if(String(error.code||'')!=='23505')throw error;
+      for(const row of rows){
+        const {error:singleError}=await supabase.from('activity_events').insert(row);
+        if(singleError&&String(singleError.code||'')!=='23505')throw singleError;
+      }
+    }
+    function queueRemoteActivity(event){
+      if(!remoteBusinessReady()||!event)return;
+      const promise=saveRemoteActivity(event).catch(error=>{
+        remoteDataError=remoteErrorText(error);
+        console.error('Événement Supabase impossible à enregistrer',error);
+        throw error;
+      });
+      remoteActivityJobs.set(event.id,promise);
+      promise.finally(()=>{if(remoteActivityJobs.get(event.id)===promise)remoteActivityJobs.delete(event.id)}).catch(()=>{});
+    }
+    async function waitForRemoteActivity(event){
+      if(!remoteBusinessReady()||!event)return;
+      const pending=remoteActivityJobs.get(event.id);
+      if(pending)return pending;
+      return saveRemoteActivity(event);
+    }
+    async function nextRemoteNumber(){
+      const year=Number(String(draft.date||today()).slice(0,4));
+      const {data,error}=await supabase.rpc('next_proforma_number',{p_brand_id:brand.id,p_year:year,p_brand_code:brand.code});
+      if(!error&&data)return String(data);
+      if(error&&!/function|does not exist|schema cache|not found/i.test(remoteErrorText(error)))throw error;
+      return nextNumber();
+    }
+    const remoteProformaPayload=record=>({user_id:currentUser.id,brand_id:record.brandId,number:record.number,status:'saved',issue_date:record.data?.date||null,data:clone(record.data),amount:Number(record.amount)||0,profile_snapshot:clone(record.profileSnapshot||{}),legacy_id:record.legacyId||(!isUuid(record.id)?String(record.id):null),created_at:safeIso(record.createdAt),updated_at:safeIso(record.updatedAt),deleted_at:null});
+    async function insertRemoteProforma(record){
+      const {data,error}=await supabase.from('proformas').insert(remoteProformaPayload(record)).select(REMOTE_PROFORMA_COLUMNS).single();
+      if(error)throw error;
+      return normalizeRemoteProforma(data);
+    }
+    async function updateRemoteProforma(record){
+      const payload=remoteProformaPayload(record);delete payload.user_id;delete payload.created_at;
+      const {data,error}=await supabase.from('proformas').update(payload).eq('id',record.id).eq('user_id',currentUser.id).is('deleted_at',null).select(REMOTE_PROFORMA_COLUMNS).single();
+      if(error)throw error;
+      return normalizeRemoteProforma(data);
+    }
+    async function deleteRemoteProforma(record,at){
+      const {data,error}=await supabase.from('proformas').update({status:'deleted',deleted_at:at,updated_at:at}).eq('id',record.id).eq('user_id',currentUser.id).is('deleted_at',null).select(REMOTE_PROFORMA_COLUMNS).single();
+      if(error)throw error;
+      return normalizeRemoteProforma(data);
+    }
+    function syncInvoiceCounters(){
+      for(const invoice of store.invoices){
+        const year=String(invoice.data?.date||invoice.createdAt||'').slice(0,4),match=String(invoice.number||'').match(/(\d+)$/);
+        if(!year||!match)continue;
+        const key=`${invoice.brandId}:${year}`;store.counters[key]=Math.max(Number(store.counters[key])||0,Number(match[1])||0);
+      }
+    }
+    async function fetchRemoteRows(table,columns,orderColumn,userId,excludeDeleted=false){
+      const rows=[];const pageSize=1000;let from=0;
+      while(true){
+        let query=supabase.from(table).select(columns).eq('user_id',userId);
+        if(excludeDeleted)query=query.is('deleted_at',null);
+        const {data,error}=await query.order(orderColumn,{ascending:false}).range(from,from+pageSize-1);
+        if(error)throw error;
+        const page=Array.isArray(data)?data:[];rows.push(...page);
+        if(page.length<pageSize)break;
+        from+=page.length;
+      }
+      return rows;
+    }
+    async function queryRemoteBusinessData(userId){
+      const [proformas,events]=await Promise.all([
+        fetchRemoteRows('proformas',REMOTE_PROFORMA_COLUMNS,'updated_at',userId,true),
+        fetchRemoteRows('activity_events',REMOTE_EVENT_COLUMNS,'occurred_at',userId)
+      ]);
+      return {invoices:proformas.map(normalizeRemoteProforma),events:events.map(normalizeRemoteEvent)};
+    }
+    async function migrateLocalBusinessData(userId){
+      const localInvoices=Array.isArray(store.invoices)?store.invoices:[];
+      const invoiceRows=localInvoices.map(invoice=>({...remoteProformaPayload({...invoice,legacyId:invoice.legacyId||invoice.id}),user_id:userId}));
+      if(invoiceRows.length){
+        const {error}=await supabase.from('proformas').upsert(invoiceRows,{onConflict:'user_id,legacy_id'});
+        if(error)throw error;
+      }
+      const events=[...(Array.isArray(store.events)?store.events:[])];
+      const tracked=new Set(events.filter(event=>event.type==='invoice.created').map(event=>String(event.invoiceId||'')));
+      for(const invoice of localInvoices){
+        if(invoice.createdAt&&!tracked.has(String(invoice.id)))events.push({id:`legacy-${invoice.id}`,type:'invoice.created',at:invoice.createdAt,invoiceId:invoice.id,brandId:invoice.brandId,number:invoice.number,client:invoiceClient(invoice),amount:invoice.amount,legacy:true});
+      }
+      const eventRows=events.map(event=>remoteActivityRow(event,'localStorage-migration',userId));
+      await insertRemoteActivityRows(eventRows);
+    }
+    async function loadRemoteBusinessData(userId){
+      const token=++remoteDataLoadToken;
+      remoteDataLoading=true;remoteDataSource='loading';remoteDataError='';
+      try{
+        let remote=await queryRemoteBusinessData(userId);
+        if(token!==remoteDataLoadToken||currentUser?.id!==userId)return;
+        const localOwner=String(store.remoteOwnerId||'');
+        const canMigrate=!localOwner||localOwner===userId;
+        if(canMigrate&&(store.invoices.length||store.events.length)){
+          await migrateLocalBusinessData(userId);
+          remote=await queryRemoteBusinessData(userId);
+        }
+        if(token!==remoteDataLoadToken||currentUser?.id!==userId)return;
+        store.invoices=remote.invoices;store.events=remote.events;store.remoteOwnerId=userId;
+        syncInvoiceCounters();persist();
+        remoteDataLoading=false;remoteDataSource='supabase';remoteDataError='';
+        renderArchive();renderDashboard();renderDocument();if(activeTab==='history')renderHistory();
+        toast(`${store.invoices.length} archive${store.invoices.length>1?'s':''} et ${store.events.length} action${store.events.length>1?'s':''} chargées depuis Supabase.`);
+      }catch(error){
+        if(token!==remoteDataLoadToken||currentUser?.id!==userId)return;
+        remoteDataLoading=false;remoteDataSource='fallback';remoteDataError=remoteErrorText(error);
+        if(store.remoteOwnerId&&store.remoteOwnerId!==userId){store.invoices=[];store.events=[];currentId=null}
+        console.error('Chargement des archives/historique Supabase impossible',error);
+        renderArchive();renderDashboard();if(activeTab==='history')renderHistory();
+        toast(remoteSchemaError(error)?'Exécutez supabase/proformas-history.sql pour activer les archives et l’historique Supabase.':'Archives et historique Supabase indisponibles : conservation locale temporaire.');
+      }
+    }
     const formatDateTime=value=>{
       const time=Date.parse(value||'');
       return Number.isFinite(time)?new Intl.DateTimeFormat('fr-FR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(new Date(time)):'Date inconnue';
@@ -600,13 +748,16 @@
     const invoiceClient=record=>record?.data?.mode==='turbo'?(record.data.turboClient||record.data.clientCompany||record.data.clientContact||'Client non renseigné'):(record?.data?.clientCompany||record?.data?.clientContact||'Client non renseigné');
     const EVENT_TITLES={'invoice.created':'Proforma créée','invoice.updated':'Proforma modifiée','invoice.deleted':'Proforma supprimée','invoice.pdf':'PDF téléchargé','invoice.pdf.requested':'Export PDF demandé','client.created':'Client ajouté','client.updated':'Fiche client modifiée','client.deleted':'Client supprimé','client.imported':'Import de clients','identity.updated':'Identité modifiée'};
     function logActivity(type,fields={},at=new Date().toISOString()){
-      store.events.push({id:`evt-${Date.now()}-${Math.random().toString(36).slice(2,9)}`,type,at,...fields});
+      const event={id:`evt-${Date.now()}-${Math.random().toString(36).slice(2,9)}`,type,at,...fields};
+      store.events.push(event);
+      queueRemoteActivity(event);
+      return event;
     }
     function activityEntries(){
       // Reprend seulement les dates de création certifiées des archives préexistantes,
       // sans inventer les anciennes modifications ni les suppressions passées.
-      const tracked=new Set(store.events.filter(e=>e.type==='invoice.created').map(e=>e.invoiceId));
-      const legacy=store.invoices.filter(i=>i.createdAt&&!tracked.has(i.id)).map(i=>({
+      const tracked=new Set(store.events.filter(e=>e.type==='invoice.created').map(e=>String(e.invoiceId||'')));
+      const legacy=store.invoices.filter(i=>i.createdAt&&!tracked.has(String(i.id))&&!(i.legacyId&&tracked.has(String(i.legacyId)))).map(i=>({
         id:`legacy-${i.id}`,type:'invoice.created',at:i.createdAt,invoiceId:i.id,brandId:i.brandId,
         number:i.number,client:invoiceClient(i),amount:i.amount,legacy:true
       }));
@@ -960,7 +1111,7 @@
       if(previous.paymentMethod!==current.paymentMethod||previous.paymentDue!==current.paymentDue)changes.push('règlement');
       return changes.length?`Changements : ${changes.join(', ')}`:'Enregistrement confirmé';
     }
-    function saveInvoice(){
+    async function saveInvoice(){
       if(draft.mode==='turbo'){
         if(!draft.turboClient.trim()||!draft.turboLabel.trim()||!String(draft.turboTtc).trim()||Number(draft.turboTtc)<0){toast('Renseignez le client, le libellé et un montant TTC valide.');return}
       }else{
@@ -975,24 +1126,41 @@
       }
       if(!/^\d{4}-\d{2}-\d{2}$/.test(draft.date)){toast('Choisissez une date d’émission valide.');return}
       if([draft.deliveryDate,draft.paymentDue].some(date=>date&&(!/^\d{4}-\d{2}-\d{2}$/.test(date)||date<draft.date))){toast('Les dates de livraison et de règlement doivent suivre la date d’émission.');return}
-      const existing=getRecord(),previousStore=clone(store),previousId=currentId,amount=calculate().ttc,now=new Date().toISOString();
-      let record;
-      if(existing){
-        const note=invoiceChangeSummary(existing.data,draft,existing.amount,amount);
-        existing.data=clone(draft);existing.amount=amount;existing.profileSnapshot=clone(getProfile());existing.updatedAt=now;
-        record=existing;
-        logActivity('invoice.updated',{brandId:brand.id,invoiceId:record.id,number:record.number,client:invoiceClient(record),amount,note},now);
-      }else{
-        const year=draft.date.slice(0,4),key=`${brand.id}:${year}`,number=nextNumber();store.counters[key]=(store.counters[key]||0)+1;
-        const id=(typeof crypto!=='undefined'&&crypto.randomUUID)?crypto.randomUUID():`inv-${Date.now()}-${Math.random().toString(36).slice(2)}`;
-        record={id,number,brandId:brand.id,data:clone(draft),amount,profileSnapshot:clone(getProfile()),createdAt:now,updatedAt:now};
-        store.invoices.push(record);currentId=id;
-        logActivity('invoice.created',{brandId:brand.id,invoiceId:id,number,client:invoiceClient(record),amount},now);
+      if(remoteDataLoading){toast('Chargement des archives Supabase en cours. Réessayez dans un instant.');return}
+      const useRemote=remoteBusinessReady(),existing=getRecord(),previousStore=clone(store),previousId=currentId,amount=calculate().ttc,now=new Date().toISOString();
+      let record,event,historyPending=false;
+      try{
+        if(existing){
+          const note=invoiceChangeSummary(existing.data,draft,existing.amount,amount);
+          const nextRecord={...existing,data:clone(draft),amount,profileSnapshot:clone(getProfile()),updatedAt:now};
+          record=useRemote?await updateRemoteProforma(nextRecord):nextRecord;
+          const index=store.invoices.findIndex(invoice=>invoice.id===existing.id);
+          if(index>=0)store.invoices[index]=record;else store.invoices.push(record);
+          currentId=record.id;
+          event=logActivity('invoice.updated',{brandId:brand.id,invoiceId:record.id,number:record.number,client:invoiceClient(record),amount,note},now);
+        }else{
+          const year=draft.date.slice(0,4),key=`${brand.id}:${year}`,number=useRemote?await nextRemoteNumber():nextNumber();
+          const id=(typeof crypto!=='undefined'&&crypto.randomUUID)?crypto.randomUUID():`inv-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+          const localRecord={id,number,brandId:brand.id,data:clone(draft),amount,profileSnapshot:clone(getProfile()),createdAt:now,updatedAt:now};
+          record=useRemote?await insertRemoteProforma(localRecord):localRecord;
+          store.invoices.push(record);currentId=record.id;
+          if(!useRemote)store.counters[key]=(store.counters[key]||0)+1;
+          else syncInvoiceCounters();
+          event=logActivity('invoice.created',{brandId:brand.id,invoiceId:record.id,number:record.number,client:invoiceClient(record),amount},record.createdAt||now);
+        }
+        store.drafts[brand.id]=clone(draft);
+        if(useRemote){
+          try{await waitForRemoteActivity(event)}catch(error){historyPending=true;remoteDataError=remoteErrorText(error);console.error('Historique de la proforma impossible à synchroniser',error)}
+        }
+        persist();
+        renderDocument();renderArchive();refreshActivityViews();
+        if(historyPending)toast('Proforma enregistrée, mais l’événement historique sera resynchronisé ultérieurement.');
+        else toast(!useRemote&&!storageAvailable?'Proforma temporaire : ouvrez le HTML hors aperçu pour l’enregistrer durablement.':(existing?'Proforma mise à jour.':'Proforma enregistrée et numérotée.'));
+      }catch(error){
+        store=previousStore;currentId=previousId;renderAll();
+        console.error('Enregistrement de la proforma impossible',error);
+        toast(useRemote?'Enregistrement Supabase impossible : '+remoteErrorText(error):'Enregistrement impossible.');
       }
-      store.drafts[brand.id]=clone(draft);
-      if(!persist()){store=previousStore;currentId=previousId;renderDocument();return}
-      renderDocument();renderArchive();refreshActivityViews();
-      toast(!storageAvailable?'Proforma temporaire : ouvrez le HTML hors aperçu pour l’enregistrer durablement.':(existing?'Proforma mise à jour.':'Proforma enregistrée et numérotée.'));
     }
     function newDraft(){currentId=null;draft=freshDraft();clearClientSaveNotice();syncDraft();renderAll();switchTab('editor');toast('Nouveau brouillon créé.')}
     function switchBrand(id){const selected=BRANDS.find(b=>b.id===id);if(!selected)return;syncDraft();brand=selected;store.lastBrand=id;currentId=null;draft=normalizeDraft(store.drafts[id]);clearClientSaveNotice();persist();applyBrand();if(activeTab==='settings')fillProfile();toast(`Marque active : ${brand.name}`)}
@@ -1000,18 +1168,32 @@
       if(brand.id!==item.brandId)switchBrand(item.brandId);
       currentId=item.id;draft=normalizeDraft(clone(item.data));clearClientSaveNotice();syncDraft();renderAll();switchTab('editor');toast(`${item.number} ouvert.`);
     }
-    function handleArchive(event){
+    async function handleArchive(event){
       const btn=event.target.closest('[data-action]');if(!btn)return;
       const item=store.invoices.find(i=>i.id===btn.dataset.id&&i.brandId===brand.id);if(!item)return;
       if(btn.dataset.action==='delete'){
         if(!confirm(`Supprimer définitivement ${item.number} ? Le numéro ne sera pas réattribué.`))return;
-        const previousStore=clone(store),previousId=currentId,previousDraft=clone(draft);
-        if(item.createdAt&&!store.events.some(e=>e.type==='invoice.created'&&e.invoiceId===item.id))logActivity('invoice.created',{brandId:item.brandId,invoiceId:item.id,number:item.number,client:invoiceClient(item),amount:item.amount,note:'Archive préexistante'},item.createdAt);
-        store.invoices=store.invoices.filter(i=>i.id!==item.id);
-        logActivity('invoice.deleted',{brandId:brand.id,invoiceId:item.id,number:item.number,client:invoiceClient(item),amount:item.amount});
-        if(currentId===item.id){currentId=null;draft=freshDraft();clearClientSaveNotice();store.drafts[brand.id]=clone(draft)}
-        if(!persist()){store=previousStore;currentId=previousId;draft=previousDraft;renderAll();return}
-        renderAll();toast('Document supprimé. Numéro conservé dans la séquence.');return;
+        if(remoteDataLoading){toast('Chargement des archives Supabase en cours. Réessayez dans un instant.');return}
+        const previousStore=clone(store),previousId=currentId,previousDraft=clone(draft),useRemote=remoteBusinessReady(),now=new Date().toISOString();
+        let historyPending=false;
+        try{
+          if(useRemote)await deleteRemoteProforma(item,now);
+          const historyEvents=[];
+          if(item.createdAt&&!store.events.some(e=>e.type==='invoice.created'&&(String(e.invoiceId||'')===String(item.id)||Boolean(item.legacyId&&String(e.invoiceId||'')===String(item.legacyId)))))historyEvents.push(logActivity('invoice.created',{brandId:item.brandId,invoiceId:item.id,number:item.number,client:invoiceClient(item),amount:item.amount,note:'Archive préexistante'},item.createdAt));
+          store.invoices=store.invoices.filter(i=>i.id!==item.id);
+          historyEvents.push(logActivity('invoice.deleted',{brandId:brand.id,invoiceId:item.id,number:item.number,client:invoiceClient(item),amount:item.amount},now));
+          if(currentId===item.id){currentId=null;draft=freshDraft();clearClientSaveNotice();store.drafts[brand.id]=clone(draft)}
+          if(useRemote){
+            for(const historyEvent of historyEvents){try{await waitForRemoteActivity(historyEvent)}catch(error){historyPending=true;remoteDataError=remoteErrorText(error);console.error('Suppression historique impossible à synchroniser',error)}}
+          }
+          persist();renderAll();
+          toast(historyPending?'Document supprimé, mais l’événement historique sera resynchronisé ultérieurement.':'Document supprimé. Numéro conservé dans la séquence.');
+        }catch(error){
+          store=previousStore;currentId=previousId;draft=previousDraft;renderAll();
+          console.error('Suppression de la proforma impossible',error);
+          toast(useRemote?'Suppression Supabase impossible : '+remoteErrorText(error):'Suppression impossible.');
+        }
+        return;
       }
       if(btn.dataset.action==='open'){openSavedInvoice(item);return}
       // Une duplication non enregistrée est seulement un brouillon, sans numéro ni journal de création.
@@ -1197,14 +1379,16 @@
       return error||null;
     }
     function applySession(session){
+      const previousUserId=currentUser?.id||'';
       currentUser=session?.user||null;
       if(currentUser){
         $('#authScreen').classList.add('hidden');
         $('#userZone').classList.remove('hidden');
         $('#userGreeting').textContent=`Bonjour ${authDisplayName(currentUser)}`;
         void loadContactsFromSupabase(currentUser.id);
+        if(previousUserId!==currentUser.id)void loadRemoteBusinessData(currentUser.id);
       }else{
-        contactsLoadToken++;contactsLoading=false;contactsError='';contactsSource='local';
+        contactsLoadToken++;remoteDataLoadToken++;contactsLoading=false;contactsError='';contactsSource='local';remoteDataLoading=false;remoteDataSource='local';remoteDataError='';
         $('#authScreen').classList.remove('hidden');
         $('#userZone').classList.add('hidden');
         $('#userGreeting').textContent='';

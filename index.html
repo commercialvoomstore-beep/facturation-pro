@@ -444,7 +444,23 @@
     const itemUnitInfo=unit=>ITEM_UNITS.find(option=>option.value===unit)||ITEM_UNITS[0];
     const lineQuantityLabel=line=>line.unit==='forfait'?'Forfait':`${formatQuantity(line.qty)} ${itemUnitInfo(line.unit).display}`;
     const makeItem=()=>({id:`item-${Date.now()}-${Math.random().toString(36).slice(2,8)}`,reference:'',designation:'',qty:1,unit:'u',price:''});
-    const freshDraft=()=>({mode:'standard',clientCompany:'',clientContact:'',clientPhone:'',clientEmail:'',clientAddress:'',clientNcc:'',clientRcc:'',clientId:'',clientVisibility:{company:true,contact:true,phone:true,email:true,address:true,ncc:true,rcc:true},invoiceTitle:'',items:[makeItem()],turboClient:'',turboLabel:'',turboTtc:'',date:today(),validDays:15,issuePlace:'',docRef:'',deliveryDate:'',paymentDue:'',paymentMethod:'',deliveryTerms:'',vatRate:18,note:''});
+    const DEFAULT_DELIVERY_TERMS=`>> Délais de livraison
+Sous 10 à 15 jours ouvrables à compter du paiement par chèque ou Virement (à compter de la réception du règlement)`;
+    const DEFAULT_INVOICE_NOTE=`Informations spécifiques :
+>>Modalité de Règlement accordée au client:
+Paiement intégral à la commande + Bon de commande (Cachet + signature)
+-------------------------------------------
+>> Tous nos règlements Acceptés
+( Espèce, Orange Money, Paypal, Carte Bancaire, Virement ou Chèque) doivent être libellés au nom de "VOOMNET TECHNOLOGY"
+-------------------------------------------
+>> NB:
+La garantie ne couvre pas la perte, le vol et la casse.
+Les produits sur commande ne sont ni repris et ne peuvent être retournés.
+Dans le cadre d’une vente à un professionnel (organisme public ou privé) la rétractation ne peut être appliquée.
+Dès signature d'un bon de commande, le client ne peut en aucun cas se rétracter (Aucun remboursement partiel ou total ne sera accepté quelque soit le motif)
+Le client ne peut en aucun cas se rétracter après le versement d’un acompte quelque soit le motif qui pourrait être évoqué.
+Une fois le bon de commande signée la vente est définitive et le client a l'obligation de régler la somme convenu.`;
+    const freshDraft=()=>({mode:'standard',clientCompany:'',clientContact:'',clientPhone:'',clientEmail:'',clientAddress:'',clientNcc:'',clientRcc:'',clientId:'',clientVisibility:{company:true,contact:true,phone:true,email:true,address:true,ncc:true,rcc:true},invoiceTitle:'',items:[makeItem()],turboClient:'',turboLabel:'',turboTtc:'',date:today(),validDays:15,issuePlace:'',docRef:'',deliveryDate:'',paymentDue:'',paymentMethod:'',deliveryTerms:DEFAULT_DELIVERY_TERMS,vatRate:18,note:DEFAULT_INVOICE_NOTE});
     // Complète les anciens brouillons/archives sans effacer leurs données existantes.
     const normalizeDraft=data=>{
       const defaults=freshDraft();if(!data||typeof data!=='object')return defaults;

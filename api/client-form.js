@@ -156,6 +156,8 @@ function validateSubmission(data) {
   if (!data.phone || data.phone.length < 6) errors.push('Le numéro de téléphone est obligatoire.');
   if (!data.paymentMethod) errors.push('Le mode de paiement est obligatoire.');
   if (!data.items.length) errors.push('Ajoutez au moins une référence à commander.');
+  const normalizedContact = data.validationContact.toLocaleLowerCase('fr-FR');
+  if (data.items.some(item => item.reference.toLocaleLowerCase('fr-FR') === normalizedContact)) errors.push('La personne en charge doit être un nom, pas une référence produit.');
   if (data.items.some(item => !item.reference || !Number.isFinite(item.quantity) || item.quantity <= 0)) {
     errors.push('Chaque référence doit avoir une quantité supérieure à zéro.');
   }

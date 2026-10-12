@@ -1690,6 +1690,8 @@ Une fois le bon de commande signée la vente est définitive et le client a l'ob
         if(!form.checkValidity()){form.reportValidity();return}
         const items=[...document.querySelectorAll('[data-public-item]')].map(row=>({reference:row.querySelector('[data-public-reference]')?.value||'',quantity:Number(row.querySelector('[data-public-quantity]')?.value)}));
         if(!items.length||items.some(item=>!item.reference.trim()||!Number.isFinite(item.quantity)||item.quantity<=0)){publicFormFeedback('Ajoutez au moins une référence avec une quantité supérieure à zéro.','error');return}
+        const validationContact=normalizeText($('#publicValidationContact').value);
+        if(items.some(item=>normalizeText(item.reference)===validationContact)){publicFormFeedback('Le champ « personne en charge de la validation » doit contenir un nom, pas une référence produit.','error');$('#publicValidationContact').focus();return}
         const submit=$('#publicSubmit');submit.disabled=true;submit.textContent='Envoi en cours…';
         try{
           const response=await fetch('/api/client-form',{method:'POST',headers:{'Content-Type':'application/json',Accept:'application/json'},body:JSON.stringify({token:PUBLIC_FORM_TOKEN,company:$('#publicCompany').value,ncc:$('#publicNcc').value,rccm:$('#publicRccm').value,location:$('#publicLocation').value,validationContact:$('#publicValidationContact').value,email:$('#publicEmail').value,phone:$('#publicPhone').value,paymentMethod:publicPaymentValue(),items})});
@@ -1697,6 +1699,7 @@ Une fois le bon de commande signée la vente est définitive et le client a l'ob
           if(!response.ok||!result?.ok)throw new Error(result?.error||'La demande n’a pas pu être enregistrée.');
           publicFormFeedback(`Votre demande a bien été reçue. La proforma ${result.number||''} sera préparée par notre équipe.`, 'success');
           form.querySelectorAll('input,button').forEach(element=>{element.disabled=true});
+          form.classList.add('hidden');
         }catch(error){
           publicFormFeedback(String(error?.message||'La demande n’a pas pu être enregistrée. Réessayez.'),'error');
           submit.disabled=false;submit.textContent='Envoyer ma demande';

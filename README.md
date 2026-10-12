@@ -87,3 +87,21 @@ Le fichier HTML contient les identités et coordonnées bancaires par défaut de
 ## GitHub Pages (facultatif)
 
 Dans **Settings → Pages**, choisissez **Deploy from a branch**, branche **main**, dossier **/(root)**. Le site statique sera accessible, mais la route d’import VosFactures ne fonctionnera pas sur GitHub Pages ; utilisez Vercel ou déployez un backend équivalent.
+
+## Formulaires clients par site et conversion en facture
+
+Le formulaire client intégré est public uniquement lorsqu’il est ouvert avec un lien généré depuis l’application. Depuis **Clients**, sélectionnez la marque active dans l’en-tête puis cliquez sur **Créer le lien**. Le lien est rattaché à cette marque, valable 30 jours et peut être copié dans WhatsApp. Le client ne choisit pas la marque et aucun PDF n’est envoyé automatiquement par WhatsApp.
+
+Le formulaire impose : nom de l’entreprise, NCC, RCCM, localisation, personne en charge de la validation, e-mail, téléphone, au moins une référence avec quantité et mode de paiement (virement ou espèce). La réponse crée une fiche dans le répertoire partagé, une demande et une proforma avec les lignes reçues. Les prix ne sont pas demandés au client : la demande apparaît comme proforma en attente de prix ; l’équipe complète les prix HT dans l’éditeur avant validation.
+
+Après un appel téléphonique, l’utilisateur ouvre **Archives** et clique sur **Confirmer la validation**. Un badge vert **Proforma validée** est alors affiché et l’action est inscrite dans l’historique. La conversion finale est volontairement bloquée tant que les trois confirmations ne sont pas enregistrées : validation orale, commande confirmée et paiement reçu. Le bouton **Générer la facture** crée alors un nouveau numéro `FAC-…`, conserve le lien avec la proforma et fige une copie de ses données dans `public.invoices`.
+
+Avant d’utiliser cette fonctionnalité :
+
+1. Exécutez `supabase/client-forms.sql` dans **Supabase → SQL Editor**, après `supabase/proformas-history.sql` et `supabase/contacts-write.sql`.
+2. Dans Vercel, configurez côté serveur uniquement :
+   - `SUPABASE_URL` ;
+   - `SUPABASE_SERVICE_ROLE_KEY` (secret, jamais dans le navigateur ou Git).
+3. Redéployez l’application. L’API `api/client-form.js` utilise la clé service uniquement côté serveur pour vérifier le lien, enregistrer la demande et créer la proforma au nom du compte qui a généré le lien.
+
+Si `client-forms.sql` n’est pas exécuté, les liens et les demandes publiques restent désactivés ; les fonctions d’authentification et de facturation existantes continuent de fonctionner après exécution des scripts Supabase précédents.

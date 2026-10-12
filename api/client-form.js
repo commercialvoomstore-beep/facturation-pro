@@ -8,7 +8,8 @@ const BRAND_NAMES = {
   groupes: 'Groupes électrogènes',
   legrand: 'Le Grand Bâtiment',
   starlink: 'Starlink CI',
-  entreprise: 'Entreprise Informatique'
+  entreprise: 'Entreprise Informatique',
+  cabinetvf: 'Cabinet VF'
 };
 
 const MAX_BODY_BYTES = 100_000;
@@ -162,7 +163,7 @@ function validateSubmission(data) {
 }
 
 function brandCode(brandId) {
-  return ({ voom: 'VOOM', maginfo: 'MAGINF', onduleurs: 'ONDUL', licences: 'LIC', groupes: 'GE', legrand: 'LEGR', starlink: 'STAR', entreprise: 'ENTINF' })[brandId] || String(brandId).slice(0, 5).toUpperCase();
+  return ({ voom: 'VOOM', maginfo: 'MAGINF', onduleurs: 'ONDUL', licences: 'LIC', groupes: 'GE', legrand: 'LEGR', starlink: 'STAR', entreprise: 'ENTINF', cabinetvf: 'CABVF' })[brandId] || String(brandId).slice(0, 5).toUpperCase();
 }
 
 function profileForDocument(snapshot) {

@@ -1,6 +1,6 @@
 # Proforma Studio
 
-Application de facturation proforma avec interface statique, authentification Supabase et synchronisation sécurisée des clients VosFactures. Elle prend en charge huit marques : Voomstore, Magasin Informatique, Onduleurs, Licences, Groupes électrogènes, Le Grand Bâtiment, Starlink CI et Entreprise Informatique.
+Application de facturation proforma avec interface statique, authentification Supabase et synchronisation sécurisée des clients VosFactures. Elle prend en charge neuf marques : Voomstore, Magasin Informatique, Onduleurs, Licences, Groupes électrogènes, Le Grand Bâtiment, Starlink CI, Entreprise Informatique et Cabinet VF.
 
 ## Utilisation
 

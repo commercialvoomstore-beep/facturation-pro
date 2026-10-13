@@ -1697,7 +1697,8 @@ Une fois le bon de commande signée la vente est définitive et le client a l'ob
           const response=await fetch('/api/client-form',{method:'POST',headers:{'Content-Type':'application/json',Accept:'application/json'},body:JSON.stringify({token:PUBLIC_FORM_TOKEN,company:$('#publicCompany').value,ncc:$('#publicNcc').value,rccm:$('#publicRccm').value,location:$('#publicLocation').value,validationContact:$('#publicValidationContact').value,email:$('#publicEmail').value,phone:$('#publicPhone').value,paymentMethod:publicPaymentValue(),items})});
           const result=await response.json().catch(()=>null);
           if(!response.ok||!result?.ok)throw new Error(result?.error||'La demande n’a pas pu être enregistrée.');
-          publicFormFeedback(`Votre demande a bien été reçue. La proforma ${result.number||''} sera préparée par notre équipe.`, 'success');
+          const routedBrand=result.brandName?` pour ${result.brandName}`:'';
+          publicFormFeedback(`Votre demande${routedBrand} a bien été enregistrée. La proforma ${result.number||''} a été créée dans les archives et reste à compléter par notre équipe.`, 'success');
           form.querySelectorAll('input,button').forEach(element=>{element.disabled=true});
           form.classList.add('hidden');
         }catch(error){

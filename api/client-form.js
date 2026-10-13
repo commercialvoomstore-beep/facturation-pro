@@ -284,7 +284,11 @@ async function createSubmission(data, link) {
     vatRate: 18,
     note: ''
   };
-  const profileSnapshot = profileForDocument(link.profile_snapshot);
+  const profileSnapshot = {
+    ...profileForDocument(link.profile_snapshot),
+    brandId: link.brand_id,
+    brandName: BRAND_NAMES[link.brand_id]
+  };
   const proformaId = uuid();
   await supabaseRest('/rest/v1/proformas', {
     method: 'POST',
@@ -319,7 +323,15 @@ async function createSubmission(data, link) {
     body: JSON.stringify({ used_at: link.used_at || submittedAt, submission_count: Number(link.submission_count || 0) + 1 })
   });
 
-  return { requestId, proformaId, number, brandId: link.brand_id, brandName: BRAND_NAMES[link.brand_id] };
+  return {
+    requestId,
+    proformaId,
+    number,
+    brandId: link.brand_id,
+    brandName: BRAND_NAMES[link.brand_id],
+    status: 'pending_pricing',
+    source: 'client_form'
+  };
 }
 
 module.exports = async function clientForm(req, res) {

@@ -14,6 +14,20 @@ const BRAND_NAMES = {
 
 const MAX_BODY_BYTES = 100_000;
 const MAX_ITEMS = 20;
+const DEFAULT_DELIVERY_TERMS = 'Sous 10 à 15 jours ouvrables à compter du paiement par chèque ou Virement (à compter de la réception du règlement)';
+const DEFAULT_INVOICE_NOTE = `>>Modalité de Règlement accordée au client:
+Paiement intégral à la commande + Bon de commande (Cachet + signature)
+-------------------------------------------
+>> Tous nos règlements Acceptés
+( Espèce, Orange Money, Paypal, Carte Bancaire, Virement ou Chèque) doivent être libellés au nom de "VOOMNET TECHNOLOGY"
+-------------------------------------------
+>> NB:
+La garantie ne couvre pas la perte, le vol et la casse.
+Les produits sur commande ne sont ni repris et ne peuvent être retournés.
+Dans le cadre d’une vente à un professionnel (organisme public ou privé) la rétractation ne peut être appliquée.
+Dès signature d'un bon de commande, le client ne peut en aucun cas se rétracter (Aucun remboursement partiel ou total ne sera accepté quelque soit le motif)
+Le client ne peut en aucun cas se rétracter après le versement d’un acompte quelque soit le motif qui pourrait être évoqué.
+Une fois le bon de commande signée la vente est définitive et le client a l'obligation de régler la somme convenu.`;
 
 function clean(value, max = 500) {
   return String(value ?? '').replace(/\s+/g, ' ').trim().slice(0, max);
@@ -280,9 +294,9 @@ async function createSubmission(data, link) {
     deliveryDate: '',
     paymentDue: '',
     paymentMethod: data.paymentMethod,
-    deliveryTerms: '',
+    deliveryTerms: DEFAULT_DELIVERY_TERMS,
     vatRate: 18,
-    note: ''
+    note: DEFAULT_INVOICE_NOTE
   };
   const profileSnapshot = {
     ...profileForDocument(link.profile_snapshot),

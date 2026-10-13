@@ -25,6 +25,30 @@ create index if not exists proformas_user_validation_lookup
 create index if not exists proformas_request_lookup
   on public.proformas (request_id);
 
+-- Les textes commerciaux restent toujours présents, y compris pour les proformas
+-- déjà créées avant l'activation du formulaire public. Les valeurs non vides sont
+-- conservées lorsqu'une équipe les a personnalisées.
+update public.proformas
+   set data = jsonb_set(
+               jsonb_set(coalesce(data, '{}'::jsonb), '{deliveryTerms}',
+                 to_jsonb($delivery$Sous 10 à 15 jours ouvrables à compter du paiement par chèque ou Virement (à compter de la réception du règlement)$delivery$::text), true),
+               '{note}',
+                 to_jsonb($note$>>Modalité de Règlement accordée au client:
+Paiement intégral à la commande + Bon de commande (Cachet + signature)
+-------------------------------------------
+>> Tous nos règlements Acceptés
+( Espèce, Orange Money, Paypal, Carte Bancaire, Virement ou Chèque) doivent être libellés au nom de "VOOMNET TECHNOLOGY"
+-------------------------------------------
+>> NB:
+La garantie ne couvre pas la perte, le vol et la casse.
+Les produits sur commande ne sont ni repris et ne peuvent être retournés.
+Dans le cadre d’une vente à un professionnel (organisme public ou privé) la rétractation ne peut être appliquée.
+Dès signature d'un bon de commande, le client ne peut en aucun cas se rétracter (Aucun remboursement partiel ou total ne sera accepté quelque soit le motif)
+Le client ne peut en aucun cas se rétracter après le versement d’un acompte quelque soit le motif qui pourrait être évoqué.
+Une fois le bon de commande signée la vente est définitive et le client a l'obligation de régler la somme convenu.$note$::text), true)
+ where nullif(btrim(coalesce(data->>'deliveryTerms', '')), '') is null
+    or nullif(btrim(coalesce(data->>'note', '')), '') is null;
+
 create table if not exists public.client_form_links (
   id uuid primary key default gen_random_uuid(),
   owner_user_id uuid not null references auth.users (id) on delete cascade,

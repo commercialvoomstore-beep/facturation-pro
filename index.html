@@ -1308,7 +1308,7 @@ Une fois le bon de commande signée la vente est définitive et le client a l'ob
       persist();renderArchive();refreshActivityViews();return updated;
     }
     async function confirmClientFormValidation(record){
-      if(record.validationStatus==='validated'){toast('Cette proforma est déjà validée.');return}
+      if(record.validationStatus==='validated'&&record.orderConfirmedAt&&record.paymentReceivedAt){toast('Cette proforma est déjà validée et prête à être facturée.');return}
       if(!recordHasCompletePrices(record)){toast('Ouvrez la proforma, complétez les prix HT, puis enregistrez-la avant de la valider.');openSavedInvoice(record);return}
       if(!confirm('Confirmer la proforma, la commande et le paiement du client ?'))return;
       try{

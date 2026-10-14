@@ -1,6 +1,6 @@
--- Suivi sécurisé de l'envoi des proformas par e-mail via Resend.
+-- Suivi sécurisé de l'envoi des proformas par e-mail via Microsoft Graph / Exchange Online.
 -- À exécuter après supabase/client-forms.sql.
--- La clé Resend et la clé service_role restent uniquement côté serveur Vercel.
+-- Les identifiants Microsoft Graph et la clé service_role restent uniquement côté serveur Vercel.
 
 create extension if not exists pgcrypto;
 
@@ -11,7 +11,7 @@ create table if not exists public.proforma_email_deliveries (
   brand_id text not null,
   recipient_email text not null,
   sender_email text not null,
-  provider text not null default 'resend',
+  provider text not null default 'microsoft-graph',
   status text not null default 'sending' check (status in ('sending', 'sent', 'failed')),
   provider_message_id text,
   error_message text,
@@ -20,6 +20,8 @@ create table if not exists public.proforma_email_deliveries (
   updated_at timestamptz not null default timezone('utc', now()),
   unique (proforma_id)
 );
+
+alter table public.proforma_email_deliveries alter column provider set default 'microsoft-graph';
 
 create index if not exists proforma_email_deliveries_user_lookup
   on public.proforma_email_deliveries (user_id, updated_at desc);

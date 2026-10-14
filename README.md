@@ -109,24 +109,25 @@ Avant d’utiliser cette fonctionnalité :
 
 Si `client-forms.sql` n’est pas exécuté, les liens et les demandes publiques restent désactivés ; les fonctions d’authentification et de facturation existantes continuent de fonctionner après exécution des scripts Supabase précédents.
 
-## Envoi des factures par e-mail
+## Envoi des proformas et factures par e-mail
 
-Après saisie et enregistrement des prix, le bouton **Envoyer la proforma** permet d’envoyer la proforma au client. À la fin du workflow, après la confirmation globale de la proforma, de la commande et du paiement, le bouton de génération crée la facture puis appelle `api/send-invoice-email.js`. L’API vérifie la session de l’utilisateur, relit le document dans Supabase, génère le PDF côté serveur et l’envoie au client avec Resend. Un renvoi manuel reste disponible depuis les archives si le premier envoi échoue.
+Après saisie et enregistrement des prix, le bouton **Envoyer la proforma** permet d’envoyer la proforma au client. À la fin du workflow, après la confirmation globale de la proforma, de la commande et du paiement, le bouton de génération crée la facture puis appelle `api/send-invoice-email.js`. Les deux routes génèrent le PDF côté serveur avec PDFKit et l’envoient via **Microsoft Graph / Exchange Online**. Un renvoi manuel reste disponible depuis les archives si le premier envoi échoue.
 
-Les e-mails de documents utilisent l’adresse de la marque/site de la facture. Les adresses sont une liste blanche côté serveur et ne peuvent pas être choisies par le navigateur :
+Les e-mails de documents utilisent la boîte Microsoft 365 de la marque/site du document. L’expéditeur ne peut pas être choisi depuis le navigateur : il est déterminé côté serveur par la marque.
 
-- `RESEND_FROM_VOOM`
-- `RESEND_FROM_MAGINFO`
-- `RESEND_FROM_ONDULEURS`
-- `RESEND_FROM_LICENCES`
-- `RESEND_FROM_GROUPES`
-- `RESEND_FROM_LEGRAND`
-- `RESEND_FROM_STARLINK`
-- `RESEND_FROM_ENTREPRISE`
-- `RESEND_FROM_CABINETVF`
+Variables serveur Vercel à configurer :
 
-Chaque domaine expéditeur doit être vérifié dans Resend avec ses enregistrements SPF/DKIM (et idéalement DMARC). Les variables `RESEND_REPLY_TO_*` et `RESEND_FROM_NAME_*` sont facultatives. Ajoutez aussi dans Vercel : `RESEND_API_KEY`, `SUPABASE_URL`, `SUPABASE_ANON_KEY` et `SUPABASE_SERVICE_ROLE_KEY`. La clé Resend et la clé service restent exclusivement côté serveur.
+- `MS_TENANT_ID` : identifiant du tenant Microsoft Entra ID ;
+- `MS_CLIENT_ID` : identifiant de l’application Entra ID ;
+- `MS_CLIENT_SECRET` : secret serveur de l’application (ne jamais le mettre dans le navigateur ou Git) ;
+- `MS_MAILBOX_VOOM`, `MS_MAILBOX_MAGINFO`, `MS_MAILBOX_ONDULEURS`, `MS_MAILBOX_LICENCES`, `MS_MAILBOX_GROUPES`, `MS_MAILBOX_LEGRAND`, `MS_MAILBOX_STARLINK`, `MS_MAILBOX_ENTREPRISE`, `MS_MAILBOX_CABINETVF` : boîtes Microsoft 365 autorisées par marque ;
+- `MS_REPLY_TO_*` et `MS_FROM_NAME_*` : variables facultatives de réponse et de nom affiché ;
+- `SUPABASE_URL`, `SUPABASE_ANON_KEY` et `SUPABASE_SERVICE_ROLE_KEY` pour les routes serveur.
 
-Exécutez également `supabase/invoice-email.sql` et `supabase/proforma-email.sql` après `supabase/client-forms.sql`. Ces scripts créent les journaux `public.invoice_email_deliveries` et `public.proforma_email_deliveries`, qui conservent le destinataire, l’expéditeur, le statut, l’identifiant Resend et l’erreur éventuelle, sans exposer de secret.
+L’application Microsoft Entra ID doit recevoir la permission applicative Microsoft Graph `Mail.Send` avec consentement administrateur. L’administrateur Exchange Online doit limiter cette application aux seules boîtes de marque autorisées. Les appels sont effectués uniquement côté serveur par `api/microsoft-graph.js` avec le flux client credentials ; aucun jeton Microsoft ni secret n’est envoyé au navigateur.
 
-Les e-mails de connexion, d’inscription et de réinitialisation de l’application restent centralisés dans Supabase Auth. Configurez leur adresse d’envoi centrale dans **Authentication → SMTP Settings** avec le relais SMTP de Resend ; les documents commerciaux, eux, utilisent l’adresse de leur marque.
+Les messages utilisent `POST /users/{boîte}/sendMail`, joignent le PDF et demandent sa conservation dans les éléments envoyés. Microsoft Graph renvoie un accusé d’acceptation par Exchange ; le suivi détaillé des livraisons et des rebonds nécessiterait une évolution séparée.
+
+Exécutez `supabase/invoice-email.sql` et `supabase/proforma-email.sql` après `supabase/client-forms.sql`. Ces scripts créent les journaux `public.invoice_email_deliveries` et `public.proforma_email_deliveries`, qui conservent le destinataire, l’expéditeur, le fournisseur Microsoft Graph, le statut et l’erreur éventuelle, sans exposer de secret. Les anciens enregistrements éventuellement liés à l’ancien fournisseur restent historiques et ne sont pas réécrits.
+
+Les e-mails de connexion, d’inscription et de réinitialisation de l’application restent centralisés dans Supabase Auth. Leur configuration SMTP éventuelle est indépendante de l’envoi des documents commerciaux par Microsoft Graph.

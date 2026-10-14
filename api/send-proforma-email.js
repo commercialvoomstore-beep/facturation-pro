@@ -1,42 +1,6 @@
 const PDFDocument = require('pdfkit');
 
-const BRAND_NAMES = {
-  voom: 'Voomstore',
-  maginfo: 'Magasin Informatique',
-  onduleurs: 'Onduleurs',
-  licences: 'Licences',
-  groupes: 'Groupes électrogènes',
-  legrand: 'Le Grand Bâtiment',
-  starlink: 'Starlink CI',
-  entreprise: 'Entreprise Informatique',
-  cabinetvf: 'Voomnet Formation'
-};
-
-const BRAND_ENV_KEYS = {
-  voom: 'VOOM',
-  maginfo: 'MAGINFO',
-  onduleurs: 'ONDULEURS',
-  licences: 'LICENCES',
-  groupes: 'GROUPES',
-  legrand: 'LEGRAND',
-  starlink: 'STARLINK',
-  entreprise: 'ENTREPRISE',
-  cabinetvf: 'CABINETVF'
-};
-
-// These are public business addresses, not credentials. Each address must be
-// verified in Resend before it can be used as a sender.
-const DEFAULT_SENDERS = {
-  voom: 'contact@voomstore.ci',
-  maginfo: 'contact@magasininformatique.ci',
-  onduleurs: 'contact@onduleurs.ci',
-  licences: 'contact@licences.ci',
-  groupes: 'contact@groupeselectrogenes.ci',
-  legrand: 'contact@legrandbatiment.ci',
-  starlink: 'contact@starlinkci.ci',
-  entreprise: 'contact@entrepriseinformatique.ci',
-  cabinetvf: 'contact@voomnetformation.ci'
-};
+const { BRAND_NAMES, graphConfigured, senderFor, sendGraphMail } = require('./microsoft-graph');
 
 function clean(value, max = 500) {
   return String(value ?? '').replace(/\s+/g, ' ').trim().slice(0, max);
@@ -89,23 +53,11 @@ function itemRows(data) {
     });
 }
 
-function senderFor(brandId) {
-  const key = BRAND_ENV_KEYS[brandId];
-  if (!key) throw new Error('Marque de facturation inconnue.');
-  const email = clean(process.env[`RESEND_FROM_${key}`] || DEFAULT_SENDERS[brandId], 180).toLowerCase();
-  const replyTo = clean(process.env[`RESEND_REPLY_TO_${key}`] || email, 180).toLowerCase();
-  if (!validEmail(email)) throw new Error(`Adresse d’envoi absente ou invalide pour ${BRAND_NAMES[brandId]}.`);
-  if (!validEmail(replyTo)) throw new Error(`Adresse de réponse absente ou invalide pour ${BRAND_NAMES[brandId]}.`);
-  const name = clean(process.env[`RESEND_FROM_NAME_${key}`] || BRAND_NAMES[brandId], 120);
-  return { email, replyTo, name };
-}
-
 function config() {
   const url = String(process.env.SUPABASE_URL || '').replace(/\/$/, '');
   const serviceKey = String(process.env.SUPABASE_SERVICE_ROLE_KEY || '').trim();
   const anonKey = String(process.env.SUPABASE_ANON_KEY || serviceKey).trim();
-  const resendKey = String(process.env.RESEND_API_KEY || '').trim();
-  return { url, serviceKey, anonKey, resendKey };
+  return { url, serviceKey, anonKey };
 }
 
 async function rest(path, options = {}) {
@@ -157,7 +109,7 @@ async function getProforma(invoiceId, userId) {
 }
 
 async function getDelivery(invoiceId) {
-  const rows = await rest(`/rest/v1/proforma_email_deliveries?proforma_id=eq.${encodeURIComponent(invoiceId)}&select=id,status,provider_message_id,sent_at&limit=1`);
+  const rows = await rest(`/rest/v1/proforma_email_deliveries?proforma_id=eq.${encodeURIComponent(invoiceId)}&select=id,status,provider,provider_message_id,sent_at&limit=1`);
   return Array.isArray(rows) ? rows[0] : null;
 }
 
@@ -283,8 +235,7 @@ module.exports = async function sendProformaEmail(req, res) {
   if (!accessToken || !invoiceId) { res.status(400).json({ ok: false, error: 'Session ou proforma manquante.' }); return; }
 
   try {
-    const { resendKey } = config();
-    if (!resendKey) { res.status(503).json({ ok: false, error: 'L’envoi e-mail n’est pas encore configuré côté serveur.' }); return; }
+    if (!graphConfigured()) { res.status(503).json({ ok: false, error: 'L’envoi Microsoft 365 n’est pas encore configuré côté serveur.' }); return; }
     const user = await authenticatedUser(accessToken);
     const invoice = await getProforma(invoiceId, user.id);
     if (!invoice) { res.status(404).json({ ok: false, error: 'Proforma introuvable dans votre périmètre.' }); return; }
@@ -297,7 +248,7 @@ module.exports = async function sendProformaEmail(req, res) {
     if (!validEmail(recipient)) { res.status(422).json({ ok: false, error: 'La proforma ne contient pas d’adresse e-mail client valide.' }); return; }
     const sender = senderFor(invoice.brand_id);
     const previous = await getDelivery(invoice.id);
-    if (previous?.status === 'sent') {
+    if (previous?.status === 'sent' && previous?.provider === 'microsoft-graph') {
       res.status(200).json({ ok: true, alreadySent: true, messageId: previous.provider_message_id || null });
       return;
     }
@@ -309,7 +260,7 @@ module.exports = async function sendProformaEmail(req, res) {
       brand_id: invoice.brand_id,
       recipient_email: recipient,
       sender_email: sender.email,
-      provider: 'resend',
+      provider: 'microsoft-graph',
       status: 'sending',
       error_message: null,
       updated_at: now,
@@ -317,30 +268,28 @@ module.exports = async function sendProformaEmail(req, res) {
     });
     const pdf = await buildPdf(invoice, sender);
     const pdfFilename = `${invoice.number}.pdf`;
-    const response = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${resendKey}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        from: `${sender.name} <${sender.email}>`,
+    let graphResult;
+    try {
+      graphResult = await sendGraphMail({
+        sender,
         to: [recipient],
-        reply_to: sender.replyTo,
         subject: `Votre proforma ${invoice.number} — ${sender.name}`,
         text: `Bonjour ${data.clientCompany || data.clientContact || 'Client'},\n\nVeuillez trouver en pièce jointe votre proforma ${invoice.number}.\n\nTotal TTC : ${money(invoice.amount)}\n\n${sender.name}`,
         html: buildEmailHtml(invoice, sender, pdfFilename),
-        attachments: [{ filename: pdfFilename, content: pdf.toString('base64') }]
-      })
-    });
-    const responseText = await response.text();
-    let responseData = null;
-    try { responseData = responseText ? JSON.parse(responseText) : null; } catch { responseData = null; }
-    if (!response.ok) {
-      const message = clean(responseData?.message || responseData?.name || 'Le fournisseur e-mail a refusé l’envoi.', 300);
+        attachments: [{
+          name: pdfFilename,
+          contentType: 'application/pdf',
+          contentBytes: pdf.toString('base64')
+        }]
+      });
+    } catch (error) {
+      const message = clean(error?.message || 'Microsoft Graph a refusé l’envoi.', 300);
       await saveDelivery(delivery.id, { status: 'failed', error_message: message, sent_at: null });
-      res.status(502).json({ ok: false, error: message });
+      res.status(error?.status === 422 ? 422 : 502).json({ ok: false, error: message });
       return;
     }
-    await saveDelivery(delivery.id, { status: 'sent', provider_message_id: clean(responseData?.id, 180), error_message: null, sent_at: new Date().toISOString() });
-    res.status(201).json({ ok: true, sent: true, messageId: responseData?.id || null, recipient });
+    await saveDelivery(delivery.id, { status: 'sent', provider_message_id: graphResult.messageId || null, error_message: null, sent_at: new Date().toISOString() });
+    res.status(201).json({ ok: true, sent: true, messageId: graphResult.messageId || null, recipient });
   } catch (error) {
     console.error('Proforma e-mail failed:', error instanceof Error ? error.message : error);
     res.status(error.status === 401 ? 401 : 500).json({ ok: false, error: error.status === 401 ? 'Session Supabase expirée.' : 'La proforma existe mais son envoi e-mail a échoué.' });

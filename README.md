@@ -108,7 +108,7 @@ Si `client-forms.sql` n’est pas exécuté, les liens et les demandes publiques
 
 ## Envoi des factures par e-mail
 
-À la fin du workflow, après la confirmation globale de la proforma, de la commande et du paiement, le bouton de génération crée la facture puis appelle `api/send-invoice-email.js`. L’API vérifie la session de l’utilisateur, relit la facture dans Supabase, génère le PDF côté serveur et l’envoie au client avec Resend. Un renvoi manuel reste disponible depuis les archives si le premier envoi échoue.
+Après saisie et enregistrement des prix, le bouton **Envoyer la proforma** permet d’envoyer la proforma au client. À la fin du workflow, après la confirmation globale de la proforma, de la commande et du paiement, le bouton de génération crée la facture puis appelle `api/send-invoice-email.js`. L’API vérifie la session de l’utilisateur, relit le document dans Supabase, génère le PDF côté serveur et l’envoie au client avec Resend. Un renvoi manuel reste disponible depuis les archives si le premier envoi échoue.
 
 Les e-mails de documents utilisent l’adresse de la marque/site de la facture. Les adresses sont une liste blanche côté serveur et ne peuvent pas être choisies par le navigateur :
 
@@ -124,6 +124,6 @@ Les e-mails de documents utilisent l’adresse de la marque/site de la facture. 
 
 Chaque domaine expéditeur doit être vérifié dans Resend avec ses enregistrements SPF/DKIM (et idéalement DMARC). Les variables `RESEND_REPLY_TO_*` et `RESEND_FROM_NAME_*` sont facultatives. Ajoutez aussi dans Vercel : `RESEND_API_KEY`, `SUPABASE_URL`, `SUPABASE_ANON_KEY` et `SUPABASE_SERVICE_ROLE_KEY`. La clé Resend et la clé service restent exclusivement côté serveur.
 
-Exécutez également `supabase/invoice-email.sql` après `supabase/client-forms.sql`. Le script crée le journal `public.invoice_email_deliveries`, qui conserve le destinataire, l’expéditeur, le statut, l’identifiant Resend et l’erreur éventuelle, sans exposer de secret.
+Exécutez également `supabase/invoice-email.sql` et `supabase/proforma-email.sql` après `supabase/client-forms.sql`. Ces scripts créent les journaux `public.invoice_email_deliveries` et `public.proforma_email_deliveries`, qui conservent le destinataire, l’expéditeur, le statut, l’identifiant Resend et l’erreur éventuelle, sans exposer de secret.
 
 Les e-mails de connexion, d’inscription et de réinitialisation de l’application restent centralisés dans Supabase Auth. Configurez leur adresse d’envoi centrale dans **Authentication → SMTP Settings** avec le relais SMTP de Resend ; les documents commerciaux, eux, utilisent l’adresse de leur marque.

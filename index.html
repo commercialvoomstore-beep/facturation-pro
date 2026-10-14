@@ -1203,8 +1203,9 @@ Une fois le bon de commande signée la vente est définitive et le client a l'ob
         .filter(i=>`${i.number} ${i.invoiceNumber||''} ${i.data?.invoiceTitle||''} ${i.data?.clientCompany||''} ${i.data?.clientContact||''} ${i.data?.turboClient||''}`.toLocaleLowerCase('fr').includes(query));
       $('#archiveCount').textContent=`${invoices.length} document${invoices.length>1?'s':''} · ${brand.name}`;
       $('#archiveList').innerHTML=invoices.length?invoices.map(i=>{
-        const clientForm=isClientRequestRecord(i),valid= i.validationStatus==='validated',invoiceReady=invoiceGateReady(i);
-        const workflow=clientForm?`<div class="archive-btns"><button type="button" class="mini-btn" data-action="${valid?'noop':'validate'}" data-id="${esc(i.id)}"${valid?' disabled':''}>${valid?'✓ Validée':'Confirmer la validation'}</button>${valid?`<button type="button" class="mini-btn" data-action="order" data-id="${esc(i.id)}">${i.orderConfirmedAt?'✓ Commande confirmée':'Confirmer commande'}</button><button type="button" class="mini-btn" data-action="payment" data-id="${esc(i.id)}">${i.paymentReceivedAt?'✓ Paiement reçu':'Confirmer paiement'}</button><button type="button" class="mini-btn ${invoiceReady?'primary-btn':''}" data-action="invoice" data-id="${esc(i.id)}"${invoiceReady?'':' disabled'} title="${invoiceReady?'Générer la facture définitive':'Validez la proforma, la commande et le paiement'}">Générer la facture</button>`:''}</div>`:'';
+        const clientForm=isClientRequestRecord(i),valid= i.validationStatus==='validated',invoiceReady=invoiceGateReady(i),proformaReady=recordHasCompletePrices(i);
+        const proformaEmailAction=proformaReady&&!i.invoiceNumber?`<div class="archive-btns"><button type="button" class="mini-btn" data-action="proforma-email" data-id="${esc(i.id)}">Envoyer la proforma</button></div>`:'';
+        const workflow=proformaEmailAction+(clientForm?`<div class="archive-btns"><button type="button" class="mini-btn" data-action="${valid?'noop':'validate'}" data-id="${esc(i.id)}"${valid?' disabled':''}>${valid?'✓ Validée':'Confirmer la validation'}</button>${valid?`<button type="button" class="mini-btn" data-action="order" data-id="${esc(i.id)}">${i.orderConfirmedAt?'✓ Commande confirmée':'Confirmer commande'}</button><button type="button" class="mini-btn" data-action="payment" data-id="${esc(i.id)}">${i.paymentReceivedAt?'✓ Paiement reçu':'Confirmer paiement'}</button><button type="button" class="mini-btn ${invoiceReady?'primary-btn':''}" data-action="invoice" data-id="${esc(i.id)}"${invoiceReady?'':' disabled'} title="${invoiceReady?'Générer la facture définitive':'Validez la proforma, la commande et le paiement'}">Générer la facture</button>`:''}</div>`:'');
         return `<div class="archive-item"><div class="archive-top"><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span class="archive-number">${esc(i.number)}</span>${archiveStatusMarkup(i)}</div><span class="archive-date">Émission ${formatDate(i.data?.date)}</span></div><div class="archive-client">${esc(invoiceClient(i))}</div><div class="history-meta">Créée ${esc(formatDateTime(i.createdAt))}${i.updatedAt&&i.updatedAt!==i.createdAt?' · Modifiée '+esc(formatDateTime(i.updatedAt)):''}</div><div class="archive-bottom"><span class="archive-amount">${money(i.amount)}</span><div class="archive-btns"><button type="button" class="mini-btn" data-action="open" data-id="${esc(i.id)}">Ouvrir</button><button type="button" class="mini-btn" data-action="duplicate" data-id="${esc(i.id)}">Dupliquer</button>${i.invoiceNumber&&i.invoiceId?`<button type="button" class="mini-btn" data-action="email" data-id="${esc(i.id)}">Envoyer par e-mail</button>`:''}<button type="button" class="mini-btn danger" data-action="delete" data-id="${esc(i.id)}" aria-label="Supprimer ${esc(i.number)}">×</button></div></div>${workflow}</div>`;
       }).join(''):'<div class="empty-state"><div class="empty-icon">▤</div>Aucune proforma trouvée pour cette marque.<br>Enregistrez-en une depuis l’éditeur.</div>';
     }
@@ -1339,6 +1340,16 @@ Une fois le bon de commande signée la vente est définitive et le client a l'ob
       if(!response.ok||!result?.ok)throw new Error(result?.error||'L’envoi de la facture par e-mail a échoué.');
       return result;
     }
+    async function sendProformaEmail(proformaId){
+      if(!supabase)throw new Error('La connexion Supabase est nécessaire pour envoyer la proforma.');
+      const {data:sessionData}=await supabase.auth.getSession();
+      const accessToken=sessionData?.session?.access_token;
+      if(!accessToken)throw new Error('Session Supabase expirée. Reconnectez-vous.');
+      const response=await fetch('/api/send-proforma-email',{method:'POST',headers:{'Content-Type':'application/json',Accept:'application/json',Authorization:`Bearer ${accessToken}`},body:JSON.stringify({proformaId})});
+      const result=await response.json().catch(()=>null);
+      if(!response.ok||!result?.ok)throw new Error(result?.error||'L’envoi de la proforma par e-mail a échoué.');
+      return result;
+    }
     async function generateFinalInvoice(record){
       if(!invoiceGateReady(record)){toast('Validez la proforma pour rendre la facture disponible.');return}
       if(!remoteBusinessReady()){toast('La connexion Supabase est nécessaire pour générer la facture.');return}
@@ -1368,6 +1379,10 @@ Une fois le bon de commande signée la vente est définitive et le client a l'ob
       if(btn.dataset.action==='order'){await confirmClientOrder(item);return}
       if(btn.dataset.action==='payment'){await confirmClientPayment(item);return}
       if(btn.dataset.action==='invoice'){await generateFinalInvoice(item);return}
+      if(btn.dataset.action==='proforma-email'){
+        try{const result=await sendProformaEmail(item.id);toast(result.alreadySent?'La proforma a déjà été envoyée par e-mail.':'Proforma envoyée par e-mail au client.')}catch(error){toast('Envoi impossible : '+remoteErrorText(error))}
+        return;
+      }
       if(btn.dataset.action==='email'){
         try{const result=await sendInvoiceEmail(item.invoiceId);toast(result.alreadySent?'La facture a déjà été envoyée par e-mail.':'Facture envoyée par e-mail au client.')}catch(error){toast('Envoi impossible : '+remoteErrorText(error))}
         return;

@@ -1205,7 +1205,7 @@ Une fois le bon de commande signée la vente est définitive et le client a l'ob
       $('#archiveList').innerHTML=invoices.length?invoices.map(i=>{
         const clientForm=isClientRequestRecord(i),valid= i.validationStatus==='validated',invoiceReady=invoiceGateReady(i);
         const workflow=clientForm?`<div class="archive-btns"><button type="button" class="mini-btn" data-action="${valid?'noop':'validate'}" data-id="${esc(i.id)}"${valid?' disabled':''}>${valid?'✓ Validée':'Confirmer la validation'}</button>${valid?`<button type="button" class="mini-btn" data-action="order" data-id="${esc(i.id)}">${i.orderConfirmedAt?'✓ Commande confirmée':'Confirmer commande'}</button><button type="button" class="mini-btn" data-action="payment" data-id="${esc(i.id)}">${i.paymentReceivedAt?'✓ Paiement reçu':'Confirmer paiement'}</button><button type="button" class="mini-btn ${invoiceReady?'primary-btn':''}" data-action="invoice" data-id="${esc(i.id)}"${invoiceReady?'':' disabled'} title="${invoiceReady?'Générer la facture définitive':'Validez la proforma, la commande et le paiement'}">Générer la facture</button>`:''}</div>`:'';
-        return `<div class="archive-item"><div class="archive-top"><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span class="archive-number">${esc(i.number)}</span>${archiveStatusMarkup(i)}</div><span class="archive-date">Émission ${formatDate(i.data?.date)}</span></div><div class="archive-client">${esc(invoiceClient(i))}</div><div class="history-meta">Créée ${esc(formatDateTime(i.createdAt))}${i.updatedAt&&i.updatedAt!==i.createdAt?' · Modifiée '+esc(formatDateTime(i.updatedAt)):''}</div><div class="archive-bottom"><span class="archive-amount">${money(i.amount)}</span><div class="archive-btns"><button type="button" class="mini-btn" data-action="open" data-id="${esc(i.id)}">Ouvrir</button><button type="button" class="mini-btn" data-action="duplicate" data-id="${esc(i.id)}">Dupliquer</button><button type="button" class="mini-btn danger" data-action="delete" data-id="${esc(i.id)}" aria-label="Supprimer ${esc(i.number)}">×</button></div></div>${workflow}</div>`;
+        return `<div class="archive-item"><div class="archive-top"><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span class="archive-number">${esc(i.number)}</span>${archiveStatusMarkup(i)}</div><span class="archive-date">Émission ${formatDate(i.data?.date)}</span></div><div class="archive-client">${esc(invoiceClient(i))}</div><div class="history-meta">Créée ${esc(formatDateTime(i.createdAt))}${i.updatedAt&&i.updatedAt!==i.createdAt?' · Modifiée '+esc(formatDateTime(i.updatedAt)):''}</div><div class="archive-bottom"><span class="archive-amount">${money(i.amount)}</span><div class="archive-btns"><button type="button" class="mini-btn" data-action="open" data-id="${esc(i.id)}">Ouvrir</button><button type="button" class="mini-btn" data-action="duplicate" data-id="${esc(i.id)}">Dupliquer</button>${i.invoiceNumber&&i.invoiceId?`<button type="button" class="mini-btn" data-action="email" data-id="${esc(i.id)}">Envoyer par e-mail</button>`:''}<button type="button" class="mini-btn danger" data-action="delete" data-id="${esc(i.id)}" aria-label="Supprimer ${esc(i.number)}">×</button></div></div>${workflow}</div>`;
       }).join(''):'<div class="empty-state"><div class="empty-icon">▤</div>Aucune proforma trouvée pour cette marque.<br>Enregistrez-en une depuis l’éditeur.</div>';
     }
     function invoiceChangeSummary(previous,current,oldAmount,newAmount){
@@ -1329,10 +1329,21 @@ Une fois le bon de commande signée la vente est définitive et le client a l'ob
       if(!confirm('Confirmer que le paiement du client a été reçu ?'))return;
       try{await persistClientFormRecord(record,{status:'payment_received',paymentReceivedAt:new Date().toISOString()},'invoice.payment_received','Paiement confirmé après validation de la commande.');toast('Paiement reçu enregistré.')}catch(error){console.error('Confirmation de paiement impossible',error);toast('Confirmation impossible : '+remoteErrorText(error))}
     }
+    async function sendInvoiceEmail(invoiceId){
+      if(!supabase)throw new Error('La connexion Supabase est nécessaire pour envoyer la facture.');
+      const {data:sessionData}=await supabase.auth.getSession();
+      const accessToken=sessionData?.session?.access_token;
+      if(!accessToken)throw new Error('Session Supabase expirée. Reconnectez-vous.');
+      const response=await fetch('/api/send-invoice-email',{method:'POST',headers:{'Content-Type':'application/json',Accept:'application/json',Authorization:`Bearer ${accessToken}`},body:JSON.stringify({invoiceId})});
+      const result=await response.json().catch(()=>null);
+      if(!response.ok||!result?.ok)throw new Error(result?.error||'L’envoi de la facture par e-mail a échoué.');
+      return result;
+    }
     async function generateFinalInvoice(record){
-      if(!invoiceGateReady(record)){toast('Validez la proforma, confirmez la commande et enregistrez le paiement avant de générer la facture.');return}
+      if(!invoiceGateReady(record)){toast('Validez la proforma pour rendre la facture disponible.');return}
       if(!remoteBusinessReady()){toast('La connexion Supabase est nécessaire pour générer la facture.');return}
-      if(!confirm('Générer la facture définitive à partir de cette proforma ?'))return;
+      if(!/^\S+@\S+\.\S+$/.test(String(record.data?.clientEmail||'').trim())){toast('Renseignez une adresse e-mail client valide avant de générer la facture.');openSavedInvoice(record);return}
+      if(!confirm('Générer la facture définitive et l’envoyer par e-mail au client ?'))return;
       try{
         const selectedBrand=BRANDS.find(item=>item.id===record.brandId)||brand;
         const year=Number(String(record.data?.date||today()).slice(0,4));
@@ -1342,7 +1353,12 @@ Une fois le bon de commande signée la vente est définitive et le client a l'ob
         const {data:invoice,error}=await supabase.from('invoices').insert({user_id:currentUser.id,proforma_id:record.id,request_id:record.requestId||null,brand_id:record.brandId,number:String(number),status:'issued',issue_date:record.data?.date||today(),data:clone(record.data),amount:Number(record.amount)||0,profile_snapshot:clone(record.profileSnapshot||{}),created_at:now,updated_at:now}).select('id,number').single();
         if(error)throw error;
         const updated=await persistClientFormRecord(record,{status:'invoiced',invoiceId:invoice.id,invoiceNumber:String(invoice.number),updatedAt:now},'invoice.generated',`Facture définitive ${invoice.number} créée.`);
-        if(updated)toast(`Facture définitive ${invoice.number} générée.`);
+        let emailResult=null;
+        try{emailResult=await sendInvoiceEmail(invoice.id)}catch(error){console.error('Envoi de la facture impossible',error);emailResult={ok:false,error:remoteErrorText(error)}}
+        if(updated){
+          if(emailResult?.ok)toast(`Facture définitive ${invoice.number} générée et envoyée à ${record.data.clientEmail}.`);
+          else toast(`Facture ${invoice.number} générée, mais l’e-mail n’a pas été envoyé : ${emailResult?.error||'configuration à vérifier'}.`);
+        }
       }catch(error){console.error('Génération de facture impossible',error);toast('Facture impossible : '+remoteErrorText(error))}
     }
     async function handleArchive(event){
@@ -1352,6 +1368,10 @@ Une fois le bon de commande signée la vente est définitive et le client a l'ob
       if(btn.dataset.action==='order'){await confirmClientOrder(item);return}
       if(btn.dataset.action==='payment'){await confirmClientPayment(item);return}
       if(btn.dataset.action==='invoice'){await generateFinalInvoice(item);return}
+      if(btn.dataset.action==='email'){
+        try{const result=await sendInvoiceEmail(item.invoiceId);toast(result.alreadySent?'La facture a déjà été envoyée par e-mail.':'Facture envoyée par e-mail au client.')}catch(error){toast('Envoi impossible : '+remoteErrorText(error))}
+        return;
+      }
       if(btn.dataset.action==='noop')return;
       if(btn.dataset.action==='delete'){
         if(!confirm(`Supprimer définitivement ${item.number} ? Le numéro ne sera pas réattribué.`))return;

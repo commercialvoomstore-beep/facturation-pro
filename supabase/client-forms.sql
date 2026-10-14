@@ -193,19 +193,20 @@ security definer
 set search_path = public
 as $$
 declare
+  numbering_year constant integer := 2620;
   candidate text;
   suffix integer;
 begin
-  if p_user_id is null or p_brand_id is null or p_year is null or p_brand_code is null then
+  if p_user_id is null or p_brand_id is null or p_brand_code is null then
     raise exception 'Missing numbering parameters';
   end if;
 
   loop
     suffix := floor(random() * 900000)::integer + 100000;
-    candidate := format('PRO-%s-%s-%s', upper(p_brand_code), p_year::text, lpad(suffix::text, 6, '0'));
+    candidate := format('PRO-%s-%s-%s', upper(p_brand_code), numbering_year::text, lpad(suffix::text, 6, '0'));
 
     insert into public.proforma_number_reservations (user_id, brand_id, year, number)
-    values (p_user_id, p_brand_id, p_year, candidate)
+    values (p_user_id, p_brand_id, numbering_year, candidate)
     on conflict do nothing;
 
     if found and not exists (
@@ -232,19 +233,20 @@ security definer
 set search_path = public
 as $$
 declare
+  numbering_year constant integer := 2620;
   candidate text;
   suffix integer;
 begin
-  if p_user_id is null or p_brand_id is null or p_year is null or p_brand_code is null then
+  if p_user_id is null or p_brand_id is null or p_brand_code is null then
     raise exception 'Missing numbering parameters';
   end if;
 
   loop
     suffix := floor(random() * 900000)::integer + 100000;
-    candidate := format('FAC-%s-%s-%s', upper(p_brand_code), p_year::text, lpad(suffix::text, 6, '0'));
+    candidate := format('FAC-%s-%s-%s', upper(p_brand_code), numbering_year::text, lpad(suffix::text, 6, '0'));
 
     insert into public.invoice_number_reservations (user_id, brand_id, year, number)
-    values (p_user_id, p_brand_id, p_year, candidate)
+    values (p_user_id, p_brand_id, numbering_year, candidate)
     on conflict do nothing;
 
     if found and not exists (

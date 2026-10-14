@@ -347,6 +347,7 @@
     const SUPABASE_ANON_KEY='sb_publishable_FreFXIb_K3XFmSlbuwPxCg_R5r6154A';
     let supabase=null,currentUser=null;
     const PUBLIC_FORM_TOKEN=new URLSearchParams(window.location.search).get('client-form')||'';
+    const NUMBERING_YEAR='2620';
     // Accepte l'ancien format JWT (eyJ…) et le nouveau format « sb_publishable_… ».
     const supabaseConfigured=()=>/^(eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+|sb_(publishable|public)_[A-Za-z0-9_-]+)$/.test(SUPABASE_ANON_KEY);
     // Catalogue : identités graphiques provisoires, jamais de fausses coordonnées légales.
@@ -695,7 +696,7 @@ Une fois le bon de commande signée la vente est définitive et le client a l'ob
       return saveRemoteActivity(event);
     }
     async function nextRemoteNumber(){
-      const year=Number(String(draft.date||today()).slice(0,4));
+      const year=Number(NUMBERING_YEAR);
       const {data,error}=await supabase.rpc('next_proforma_number',{p_brand_id:brand.id,p_year:year,p_brand_code:brand.code});
       if(!error&&data)return String(data);
       if(error&&!/function|does not exist|schema cache|not found/i.test(remoteErrorText(error)))throw error;
@@ -904,7 +905,7 @@ Une fois le bon de commande signée la vente est définitive et le client a l'ob
     };
     function syncDraft(){store.drafts[brand.id]=clone(draft);persist()}
     function randomDocumentSuffix(){const values=new Uint32Array(1);if(typeof crypto!=='undefined'&&crypto.getRandomValues)crypto.getRandomValues(values);else values[0]=Math.floor(Math.random()*0xffffffff);return String(100000+(values[0]%900000)).padStart(6,'0')}
-    function nextNumber(){const year=String(draft.date||today()).slice(0,4);let candidate;do{candidate=`PRO-${brand.code}-${year}-${randomDocumentSuffix()}`}while(store.invoices.some(invoice=>invoice.brandId===brand.id&&invoice.number===candidate));return candidate}
+    function nextNumber(){const year=NUMBERING_YEAR;let candidate;do{candidate=`PRO-${brand.code}-${year}-${randomDocumentSuffix()}`}while(store.invoices.some(invoice=>invoice.brandId===brand.id&&invoice.number===candidate));return candidate}
     function displayNumber(){const record=getRecord();return record?.invoiceNumber||record?.number||nextNumber()}
     // Le TTC Turbo est la source de vérité; le HT est arrondi au franc puis la TVA est le solde.
     function calculate(){
@@ -1251,7 +1252,7 @@ Une fois le bon de commande signée la vente est définitive et le client a l'ob
           currentId=record.id;
           event=logActivity('invoice.updated',{brandId:brand.id,invoiceId:record.id,number:record.number,client:invoiceClient(record),amount,note},now);
         }else{
-          const year=draft.date.slice(0,4),key=`${brand.id}:${year}`,number=useRemote?await nextRemoteNumber():nextNumber();
+          const year=NUMBERING_YEAR,key=`${brand.id}:${year}`,number=useRemote?await nextRemoteNumber():nextNumber();
           const id=(typeof crypto!=='undefined'&&crypto.randomUUID)?crypto.randomUUID():`inv-${Date.now()}-${Math.random().toString(36).slice(2)}`;
           const localRecord={id,number,brandId:brand.id,data:clone(draft),amount,profileSnapshot:clone(profileSnapshotForDocument()),createdAt:now,updatedAt:now};
           record=useRemote?await insertRemoteProforma(localRecord):localRecord;
@@ -1358,7 +1359,7 @@ Une fois le bon de commande signée la vente est définitive et le client a l'ob
       if(!confirm('Générer la facture définitive et l’envoyer par e-mail au client ?'))return;
       try{
         const selectedBrand=BRANDS.find(item=>item.id===record.brandId)||brand;
-        const year=Number(String(record.data?.date||today()).slice(0,4));
+        const year=Number(NUMBERING_YEAR);
         const {data:number,error:numberError}=await supabase.rpc('next_invoice_number_for_user',{p_user_id:currentUser.id,p_brand_id:record.brandId,p_year:year,p_brand_code:selectedBrand.code});
         if(numberError||!number)throw numberError||new Error('Numéro de facture indisponible.');
         const now=new Date().toISOString();

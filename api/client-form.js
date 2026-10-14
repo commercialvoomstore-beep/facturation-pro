@@ -14,6 +14,7 @@ const BRAND_NAMES = {
 
 const MAX_BODY_BYTES = 100_000;
 const MAX_ITEMS = 20;
+const NUMBERING_YEAR = 2620;
 const DEFAULT_DELIVERY_TERMS = 'Sous 10 à 15 jours ouvrables à compter du paiement par chèque ou Virement (à compter de la réception du règlement)';
 const DEFAULT_INVOICE_NOTE = `>>Modalité de Règlement accordée au client:
 Paiement intégral à la commande + Bon de commande (Cachet + signature)
@@ -255,7 +256,7 @@ async function createSubmission(data, link) {
     body: JSON.stringify(itemRows)
   });
 
-  const year = Number(today().slice(0, 4));
+  const year = NUMBERING_YEAR;
   const numberRows = await supabaseRest('/rest/v1/rpc/next_proforma_number_for_user', {
     method: 'POST',
     body: JSON.stringify({ p_user_id: link.owner_user_id, p_brand_id: link.brand_id, p_year: year, p_brand_code: brandCode(link.brand_id) })

@@ -288,6 +288,10 @@ module.exports = async function sendInvoiceEmail(req, res) {
     const user = await authenticatedUser(accessToken);
     const invoice = await getInvoice(invoiceId, user.id);
     if (!invoice) { res.status(404).json({ ok: false, error: 'Facture introuvable dans votre périmètre.' }); return; }
+    if (String(invoice.status || '').toLowerCase() !== 'issued' || !invoice.proforma_id || !Number.isFinite(Number(invoice.amount)) || Number(invoice.amount) <= 0) {
+      res.status(422).json({ ok: false, error: 'Cette facture n’est pas prête à être envoyée.' });
+      return;
+    }
     const data = invoice.data && typeof invoice.data === 'object' ? invoice.data : {};
     const recipient = clean(data.clientEmail, 180).toLowerCase();
     if (!validEmail(recipient)) { res.status(422).json({ ok: false, error: 'La facture ne contient pas d’adresse e-mail client valide.' }); return; }

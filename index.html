@@ -1285,12 +1285,14 @@ Une fois le bon de commande signée la vente est définitive et le client a l'ob
     }
     function recordHasCompletePrices(record){
       const data=record?.data||{};
-      if(data.mode==='turbo')return Boolean(String(data.turboTtc||'').trim())&&Number(data.turboTtc)>=0;
+      if(data.mode==='turbo')return Boolean(String(data.turboTtc||'').trim())&&Number(data.turboTtc)>0;
       const lines=Array.isArray(data.items)?data.items.filter(item=>String(item.designation||'').trim()):[];
-      return Boolean(lines.length)&&lines.every(item=>{
+      const complete=Boolean(lines.length)&&lines.every(item=>{
         const unit=itemUnitInfo(item.unit).value;
         return (unit==='forfait'||(Number.isFinite(Number(item.qty))&&Number(item.qty)>0))&&String(item.price??'').trim()!==''&&Number.isFinite(Number(item.price))&&Number(item.price)>=0;
       });
+      const total=lines.reduce((sum,item)=>sum+(itemUnitInfo(item.unit).value==='forfait'?1:Number(item.qty))*Number(item.price),0);
+      return complete&&Number.isFinite(total)&&total>0;
     }
     async function updateCustomerRequestState(record,patch){
       if(!record.requestId||!supabase||!currentUser)return;

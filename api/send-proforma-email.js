@@ -152,7 +152,7 @@ async function authenticatedUser(accessToken) {
 }
 
 async function getProforma(invoiceId, userId) {
-  const rows = await rest(`/rest/v1/proformas?id=eq.${encodeURIComponent(invoiceId)}&user_id=eq.${encodeURIComponent(userId)}&select=id,user_id,request_id,brand_id,number,status,issue_date,data,amount,profile_snapshot&limit=1`);
+  const rows = await rest(`/rest/v1/proformas?id=eq.${encodeURIComponent(invoiceId)}&user_id=eq.${encodeURIComponent(userId)}&select=id,user_id,request_id,brand_id,number,status,issue_date,data,amount,profile_snapshot,deleted_at&limit=1`);
   return Array.isArray(rows) ? rows[0] : null;
 }
 
@@ -288,6 +288,10 @@ module.exports = async function sendProformaEmail(req, res) {
     const user = await authenticatedUser(accessToken);
     const invoice = await getProforma(invoiceId, user.id);
     if (!invoice) { res.status(404).json({ ok: false, error: 'Proforma introuvable dans votre périmètre.' }); return; }
+    if (invoice.deleted_at || ['draft', 'pending_pricing', 'deleted'].includes(String(invoice.status || '').toLowerCase()) || !Number.isFinite(Number(invoice.amount)) || Number(invoice.amount) <= 0) {
+      res.status(422).json({ ok: false, error: 'Cette proforma doit être enregistrée avec un montant supérieur à zéro avant son envoi.' });
+      return;
+    }
     const data = invoice.data && typeof invoice.data === 'object' ? invoice.data : {};
     const recipient = clean(data.clientEmail, 180).toLowerCase();
     if (!validEmail(recipient)) { res.status(422).json({ ok: false, error: 'La proforma ne contient pas d’adresse e-mail client valide.' }); return; }

@@ -267,6 +267,7 @@ async function createSubmission(data, link) {
   const items = data.items.map(item => ({
     id: uuid(),
     designation: item.reference,
+    description: '',
     reference: item.reference,
     qty: String(item.quantity),
     unit: 'u',

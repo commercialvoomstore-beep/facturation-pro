@@ -80,6 +80,7 @@ function itemRows(data) {
       return {
         reference: String(item?.reference || '').trim(),
         designation: String(item?.designation || '').trim(),
+        description: String(item?.description || '').trim(),
         quantity,
         unit: String(item?.unit || 'u'),
         price,
@@ -220,7 +221,7 @@ function buildPdf(invoice, sender) {
     y += 25;
     document.font('Helvetica').fontSize(8.5).fillColor('#18202D');
     for (const row of rows) {
-      const description = pdfText([row.reference, row.designation].filter(Boolean).join(' · '));
+      const description = pdfText([row.reference, row.designation, row.description].filter(Boolean).join(' · '));
       const height = Math.max(24, document.heightOfString(description, { width: 250 }) + 10);
       if (y + height > 710) { document.addPage(); y = 50; }
       document.fillColor(y % 2 ? '#F7F9FC' : '#FFFFFF').rect(42, y, 511, height).fill();
@@ -257,7 +258,7 @@ function buildEmailHtml(invoice, sender, pdfFilename) {
   const profile = invoice.profile_snapshot && typeof invoice.profile_snapshot === 'object' ? invoice.profile_snapshot : {};
   const brandName = BRAND_NAMES[invoice.brand_id] || invoice.brand_id;
   const client = data.clientCompany || data.clientContact || 'Client';
-  const rows = itemRows(data).map(row => `<tr><td>${htmlEscape(row.designation)}</td><td style="text-align:right">${htmlEscape(row.quantity)} ${htmlEscape(row.unit)}</td><td style="text-align:right">${htmlEscape(money(row.total))}</td></tr>`).join('');
+  const rows = itemRows(data).map(row => `<tr><td>${htmlEscape(row.designation)}${row.description?`<br><small style="color:#637083">${htmlEscape(row.description)}</small>`:''}</td><td style="text-align:right">${htmlEscape(row.quantity)} ${htmlEscape(row.unit)}</td><td style="text-align:right">${htmlEscape(money(row.total))}</td></tr>`).join('');
   return `<!doctype html><html lang="fr"><body style="margin:0;background:#f5f7fb;color:#18202d;font-family:Arial,sans-serif"><div style="max-width:680px;margin:24px auto;background:#fff;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden"><div style="height:8px;background:#5A1B89"></div><div style="padding:28px 32px"><p style="margin:0;color:#5A1B89;font-size:12px;font-weight:bold;letter-spacing:1px">${htmlEscape(brandName).toUpperCase()}</p><h1 style="margin:12px 0 4px;font-size:25px">Votre facture définitive</h1><p style="margin:0;color:#637083">${htmlEscape(invoice.number)}</p><hr style="border:0;border-top:1px solid #e2e8f0;margin:24px 0"><p>Bonjour ${htmlEscape(client)},</p><p>Veuillez trouver en pièce jointe votre facture définitive <strong>${htmlEscape(invoice.number)}</strong>.</p><table style="width:100%;border-collapse:collapse;margin:22px 0"><thead><tr style="background:#f3ecf8"><th style="text-align:left;padding:10px">Désignation</th><th style="text-align:right;padding:10px">Quantité</th><th style="text-align:right;padding:10px">Total HT</th></tr></thead><tbody>${rows}</tbody></table><p style="text-align:right;font-size:18px"><strong>Total TTC : ${htmlEscape(money(invoice.amount))}</strong></p><p style="color:#637083;font-size:13px;line-height:1.6">Pour toute question, répondez directement à cet e-mail.</p><p style="margin-top:28px;font-size:13px"><strong>${htmlEscape(profile.company || brandName)}</strong><br>${htmlEscape(profile.phone || '')}<br>${htmlEscape(profile.email || sender.email)}</p><p style="color:#9aa6b3;font-size:11px">Document PDF joint : ${htmlEscape(pdfFilename)}</p></div></div></body></html>`;
 }
 

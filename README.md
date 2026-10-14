@@ -65,6 +65,7 @@ Pour rendre l’onglet **Archives** et l’onglet **Historique** persistants, ex
 
 Lors de la première connexion après l’installation du script, les proformas et événements déjà présents dans le `localStorage` du navigateur sont importés dans le compte connecté avec une source de migration. Les proformas enregistrées ensuite utilisent Supabase comme source principale ; une indisponibilité temporaire active seulement le mode local de secours.
 Les nouveaux numéros utilisent le segment fixe `2620` et un suffixe aléatoire de six chiffres, par exemple `PRO-ENTINF-2620-583742` ou `FAC-CABVF-2620-914205`. La date réelle d’émission reste conservée dans le document ; seul le segment de numérotation est fixé à `2620`. Les anciennes références séquentielles restent inchangées. Une réservation serveur empêche les collisions lors de créations simultanées.
+Chaque ligne de proforma possède également un champ **Description (facultatif)** sous la désignation. Cette description est conservée dans le brouillon, l’archive, le PDF et l’e-mail du document.
 
 ## Export Excel ou SQL local
 

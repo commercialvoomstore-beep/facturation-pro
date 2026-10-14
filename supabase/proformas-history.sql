@@ -97,6 +97,31 @@ create table if not exists public.proforma_sequences (
   primary key (user_id, brand_id, year)
 );
 
+-- Réservations de suffixes aléatoires : elles évitent les collisions même
+-- lorsque plusieurs utilisateurs créent un document en même temps.
+create table if not exists public.proforma_number_reservations (
+  user_id uuid not null references auth.users (id) on delete cascade,
+  brand_id text not null,
+  year integer not null check (year between 2000 and 2200),
+  number text not null,
+  created_at timestamptz not null default timezone('utc', now()),
+  primary key (user_id, brand_id, year, number)
+);
+
+create table if not exists public.invoice_number_reservations (
+  user_id uuid not null references auth.users (id) on delete cascade,
+  brand_id text not null,
+  year integer not null check (year between 2000 and 2200),
+  number text not null,
+  created_at timestamptz not null default timezone('utc', now()),
+  primary key (user_id, brand_id, year, number)
+);
+
+alter table public.proforma_number_reservations enable row level security;
+alter table public.invoice_number_reservations enable row level security;
+revoke all on table public.proforma_number_reservations from public, anon, authenticated;
+revoke all on table public.invoice_number_reservations from public, anon, authenticated;
+
 alter table public.proforma_sequences enable row level security;
 revoke all on table public.proforma_sequences from public, anon, authenticated;
 
@@ -112,32 +137,33 @@ set search_path = public
 as $$
 declare
   current_user_id uuid := auth.uid();
-  existing_max integer := 0;
-  next_value integer;
+  candidate text;
+  suffix integer;
 begin
   if current_user_id is null then
     raise exception 'Authentication required';
   end if;
+  if p_brand_id is null or p_year is null or p_brand_code is null then
+    raise exception 'Missing numbering parameters';
+  end if;
 
-  select coalesce(max((substring(number from '([0-9]+)$'))::integer), 0)
-    into existing_max
-    from public.proformas
-   where user_id = current_user_id
-     and brand_id = p_brand_id
-     and number like 'PRO-%-' || p_year::text || '-%';
+  loop
+    suffix := floor(random() * 900000)::integer + 100000;
+    candidate := format('PRO-%s-%s-%s', upper(p_brand_code), p_year::text, lpad(suffix::text, 6, '0'));
 
-  insert into public.proforma_sequences (user_id, brand_id, year, last_value)
-  values (current_user_id, p_brand_id, p_year, existing_max)
-  on conflict (user_id, brand_id, year) do nothing;
+    insert into public.proforma_number_reservations (user_id, brand_id, year, number)
+    values (current_user_id, p_brand_id, p_year, candidate)
+    on conflict do nothing;
 
-  update public.proforma_sequences
-     set last_value = greatest(last_value, existing_max) + 1
-   where user_id = current_user_id
-     and brand_id = p_brand_id
-     and year = p_year
-  returning last_value into next_value;
-
-  return format('PRO-%s-%s-%s', upper(p_brand_code), p_year::text, lpad(next_value::text, 4, '0'));
+    if found and not exists (
+      select 1 from public.proformas
+       where user_id = current_user_id
+         and brand_id = p_brand_id
+         and number = candidate
+    ) then
+      return candidate;
+    end if;
+  end loop;
 end;
 $$;
 

@@ -903,7 +903,8 @@ Une fois le bon de commande signée la vente est définitive et le client a l'ob
       return {...Object.fromEntries(Object.keys(freshProfile(brand)).map(key=>[key,snapshot[key]??(key==='color'?brand.color:'')])),preparedBy:String(snapshot.preparedBy||'').trim()};
     };
     function syncDraft(){store.drafts[brand.id]=clone(draft);persist()}
-    function nextNumber(){const year=String(draft.date||today()).slice(0,4);const key=`${brand.id}:${year}`;return `PRO-${brand.code}-${year}-${String((store.counters[key]||0)+1).padStart(4,'0')}`}
+    function randomDocumentSuffix(){const values=new Uint32Array(1);if(typeof crypto!=='undefined'&&crypto.getRandomValues)crypto.getRandomValues(values);else values[0]=Math.floor(Math.random()*0xffffffff);return String(100000+(values[0]%900000)).padStart(6,'0')}
+    function nextNumber(){const year=String(draft.date||today()).slice(0,4);let candidate;do{candidate=`PRO-${brand.code}-${year}-${randomDocumentSuffix()}`}while(store.invoices.some(invoice=>invoice.brandId===brand.id&&invoice.number===candidate));return candidate}
     function displayNumber(){const record=getRecord();return record?.invoiceNumber||record?.number||nextNumber()}
     // Le TTC Turbo est la source de vérité; le HT est arrondi au franc puis la TVA est le solde.
     function calculate(){
@@ -1404,7 +1405,7 @@ Une fois le bon de commande signée la vente est définitive et le client a l'ob
             for(const historyEvent of historyEvents){try{await waitForRemoteActivity(historyEvent)}catch(error){historyPending=true;remoteDataError=remoteErrorText(error);console.error('Suppression historique impossible à synchroniser',error)}}
           }
           persist();renderAll();
-          toast(historyPending?'Document supprimé, mais l’événement historique sera resynchronisé ultérieurement.':'Document supprimé. Numéro conservé dans la séquence.');
+          toast(historyPending?'Document supprimé, mais l’événement historique sera resynchronisé ultérieurement.':'Document supprimé. Le numéro ne sera pas réattribué.');
         }catch(error){
           store=previousStore;currentId=previousId;draft=previousDraft;renderAll();
           console.error('Suppression de la proforma impossible',error);

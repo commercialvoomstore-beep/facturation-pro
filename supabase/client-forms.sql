@@ -193,32 +193,30 @@ security definer
 set search_path = public
 as $$
 declare
-  existing_max integer := 0;
-  next_value integer;
+  candidate text;
+  suffix integer;
 begin
   if p_user_id is null or p_brand_id is null or p_year is null or p_brand_code is null then
     raise exception 'Missing numbering parameters';
   end if;
 
-  select coalesce(max((substring(number from '([0-9]+)$'))::integer), 0)
-    into existing_max
-    from public.proformas
-   where user_id = p_user_id
-     and brand_id = p_brand_id
-     and number like 'PRO-%-' || p_year::text || '-%';
+  loop
+    suffix := floor(random() * 900000)::integer + 100000;
+    candidate := format('PRO-%s-%s-%s', upper(p_brand_code), p_year::text, lpad(suffix::text, 6, '0'));
 
-  insert into public.proforma_sequences (user_id, brand_id, year, last_value)
-  values (p_user_id, p_brand_id, p_year, existing_max)
-  on conflict (user_id, brand_id, year) do nothing;
+    insert into public.proforma_number_reservations (user_id, brand_id, year, number)
+    values (p_user_id, p_brand_id, p_year, candidate)
+    on conflict do nothing;
 
-  update public.proforma_sequences
-     set last_value = greatest(last_value, existing_max) + 1
-   where user_id = p_user_id
-     and brand_id = p_brand_id
-     and year = p_year
-  returning last_value into next_value;
-
-  return format('PRO-%s-%s-%s', upper(p_brand_code), p_year::text, lpad(next_value::text, 4, '0'));
+    if found and not exists (
+      select 1 from public.proformas
+       where user_id = p_user_id
+         and brand_id = p_brand_id
+         and number = candidate
+    ) then
+      return candidate;
+    end if;
+  end loop;
 end;
 $$;
 
@@ -234,32 +232,30 @@ security definer
 set search_path = public
 as $$
 declare
-  existing_max integer := 0;
-  next_value integer;
+  candidate text;
+  suffix integer;
 begin
   if p_user_id is null or p_brand_id is null or p_year is null or p_brand_code is null then
     raise exception 'Missing numbering parameters';
   end if;
 
-  select coalesce(max((substring(number from '([0-9]+)$'))::integer), 0)
-    into existing_max
-    from public.invoices
-   where user_id = p_user_id
-     and brand_id = p_brand_id
-     and number like 'FAC-%-' || p_year::text || '-%';
+  loop
+    suffix := floor(random() * 900000)::integer + 100000;
+    candidate := format('FAC-%s-%s-%s', upper(p_brand_code), p_year::text, lpad(suffix::text, 6, '0'));
 
-  insert into public.invoice_sequences (user_id, brand_id, year, last_value)
-  values (p_user_id, p_brand_id, p_year, existing_max)
-  on conflict (user_id, brand_id, year) do nothing;
+    insert into public.invoice_number_reservations (user_id, brand_id, year, number)
+    values (p_user_id, p_brand_id, p_year, candidate)
+    on conflict do nothing;
 
-  update public.invoice_sequences
-     set last_value = greatest(last_value, existing_max) + 1
-   where user_id = p_user_id
-     and brand_id = p_brand_id
-     and year = p_year
-  returning last_value into next_value;
-
-  return format('FAC-%s-%s-%s', upper(p_brand_code), p_year::text, lpad(next_value::text, 4, '0'));
+    if found and not exists (
+      select 1 from public.invoices
+       where user_id = p_user_id
+         and brand_id = p_brand_id
+         and number = candidate
+    ) then
+      return candidate;
+    end if;
+  end loop;
 end;
 $$;
 

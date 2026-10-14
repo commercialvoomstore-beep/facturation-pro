@@ -61,9 +61,10 @@ La route serveur vérifie d’abord la session Supabase de l’utilisateur. Elle
 
 ## Archives et historique Supabase
 
-Pour rendre l’onglet **Archives** et l’onglet **Historique** persistants, exécutez `supabase/proformas-history.sql` dans **Supabase → SQL Editor**. Le script crée les tables `public.proformas`, `public.activity_events` et le compteur sécurisé des numéros par utilisateur, puis active les politiques RLS. Les archives sont privées par compte utilisateur ; les événements d’historique sont en lecture seule pour l’utilisateur et ne peuvent pas être supprimés depuis l’application. Les brouillons non enregistrés restent locaux.
+Pour rendre l’onglet **Archives** et l’onglet **Historique** persistants, exécutez `supabase/proformas-history.sql` dans **Supabase → SQL Editor**. Le script crée les tables `public.proformas`, `public.activity_events` et les réservations sécurisées de suffixes aléatoires par utilisateur, puis active les politiques RLS. Les archives sont privées par compte utilisateur ; les événements d’historique sont en lecture seule pour l’utilisateur et ne peuvent pas être supprimés depuis l’application. Les brouillons non enregistrés restent locaux.
 
 Lors de la première connexion après l’installation du script, les proformas et événements déjà présents dans le `localStorage` du navigateur sont importés dans le compte connecté avec une source de migration. Les proformas enregistrées ensuite utilisent Supabase comme source principale ; une indisponibilité temporaire active seulement le mode local de secours.
+Les nouveaux numéros utilisent un suffixe aléatoire de six chiffres, par exemple `PRO-ENTINF-2026-583742` ou `FAC-CABVF-2026-914205`. Les anciennes références séquentielles restent inchangées. Une réservation serveur empêche les collisions lors de créations simultanées.
 
 ## Export Excel ou SQL local
 

@@ -1,6 +1,6 @@
 # Proforma Studio
 
-Application de facturation proforma avec interface statique, authentification Supabase et synchronisation sécurisée des clients VosFactures. Elle prend en charge neuf marques : Voomstore, Magasin Informatique, Onduleurs, Licences, Groupes électrogènes, Le Grand Bâtiment, Starlink CI, Entreprise Informatique et Cabinet VF.
+Application de facturation proforma avec interface statique, authentification Supabase et synchronisation sécurisée des clients VosFactures. Le catalogue actif comprend neuf marques : Voomstore, Magasin Informatique, Onduleurs, Licences, Groupes électrogènes, Le Grand Bâtiment, Starlink CI, Entreprise Informatique et Cabinet VF. Voomnet Technology a été identifiée comme une dixième marque distincte à intégrer avec le code de numérotation `VNT`, après confirmation de ses coordonnées officielles.
 
 ## Utilisation
 
@@ -115,12 +115,27 @@ Après saisie et enregistrement des prix, le bouton **Envoyer la proforma** perm
 
 Les e-mails de documents utilisent la boîte Microsoft 365 de la marque/site du document. L’expéditeur ne peut pas être choisi depuis le navigateur : il est déterminé côté serveur par la marque.
 
+### Boîtes Exchange vérifiées
+
+La vérification actuelle des boîtes Exchange a confirmé les boîtes de marque sélectionnées suivantes :
+
+- **Le Grand Bâtiment** : `contact@legrandbatiment.ci` → `MS_MAILBOX_LEGRAND` ;
+- **Starlink CI** : `contact@starlinkci.ci` → `MS_MAILBOX_STARLINK` ;
+- **Voomnet Formation / Cabinet VF** : `contact@voomnetformation.ci` → `MS_MAILBOX_CABINETVF` ;
+- **Voomstore Côte d’Ivoire** : `contact@voomstore.ci` → `MS_MAILBOX_VOOM` ;
+- **Voomnet Technology** : boîte sélectionnée dans Exchange, réservée à la nouvelle marque `VNT` et à configurer avec `MS_MAILBOX_VOOMNETTECH` après confirmation de l’adresse exacte et de ses coordonnées officielles.
+
+Les boîtes individuelles non sélectionnées dans Exchange ne sont pas utilisées comme expéditeurs de marque. Les marques **Magasin Informatique**, **Onduleurs**, **Licences**, **Groupes Électrogènes** et **Entreprise Informatique** n’ont pas encore de boîte de marque sélectionnée dans cette vérification ; leur envoi Graph restera indisponible tant qu’une boîte autorisée ne sera pas configurée.
+
+Cette capture confirme la disponibilité des boîtes, mais ne remplace pas la configuration de l’application Entra ID : `Mail.Send`, consentement administrateur et restriction Exchange aux seules boîtes autorisées restent nécessaires.
+
 Variables serveur Vercel à configurer :
 
 - `MS_TENANT_ID` : identifiant du tenant Microsoft Entra ID ;
 - `MS_CLIENT_ID` : identifiant de l’application Entra ID ;
 - `MS_CLIENT_SECRET` : secret serveur de l’application (ne jamais le mettre dans le navigateur ou Git) ;
-- `MS_MAILBOX_VOOM`, `MS_MAILBOX_MAGINFO`, `MS_MAILBOX_ONDULEURS`, `MS_MAILBOX_LICENCES`, `MS_MAILBOX_GROUPES`, `MS_MAILBOX_LEGRAND`, `MS_MAILBOX_STARLINK`, `MS_MAILBOX_ENTREPRISE`, `MS_MAILBOX_CABINETVF` : boîtes Microsoft 365 autorisées par marque ;
+- `MS_MAILBOX_VOOM`, `MS_MAILBOX_MAGINFO`, `MS_MAILBOX_ONDULEURS`, `MS_MAILBOX_LICENCES`, `MS_MAILBOX_GROUPES`, `MS_MAILBOX_LEGRAND`, `MS_MAILBOX_STARLINK`, `MS_MAILBOX_ENTREPRISE`, `MS_MAILBOX_CABINETVF` : boîtes Microsoft 365 autorisées par marque du catalogue actif ;
+- `MS_MAILBOX_VOOMNETTECH` : variable réservée à la future marque distincte **Voomnet Technology** (`VNT`). Elle ne doit être activée qu’après l’ajout de cette marque dans l’application et la confirmation de son adresse e-mail exacte ;
 - `MS_REPLY_TO_*` et `MS_FROM_NAME_*` : variables facultatives de réponse et de nom affiché ;
 - `SUPABASE_URL`, `SUPABASE_ANON_KEY` et `SUPABASE_SERVICE_ROLE_KEY` pour les routes serveur.
 

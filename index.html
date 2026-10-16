@@ -1247,7 +1247,10 @@ Une fois le bon de commande signée la vente est définitive et le client a l'ob
       try{
         if(existing){
           const note=invoiceChangeSummary(existing.data,draft,existing.amount,amount);
-          const nextRecord={...existing,data:clone(draft),amount,profileSnapshot:clone(existing.source==='client_form'&&existing.profileSnapshot?existing.profileSnapshot:profileSnapshotForDocument()),updatedAt:now};
+          const pricingComplete=existing.source==='client_form'
+            && String(existing.status||'').toLowerCase()==='pending_pricing'
+            && recordHasCompletePrices({...existing,data:draft,amount});
+          const nextRecord={...existing,data:clone(draft),amount,status:pricingComplete?'saved':existing.status,profileSnapshot:clone(existing.source==='client_form'&&existing.profileSnapshot?existing.profileSnapshot:profileSnapshotForDocument()),updatedAt:now};
           record=useRemote?await updateRemoteProforma(nextRecord):nextRecord;
           const index=store.invoices.findIndex(invoice=>invoice.id===existing.id);
           if(index>=0)store.invoices[index]=record;else store.invoices.push(record);

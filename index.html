@@ -802,7 +802,7 @@ Une fois le bon de commande signée la vente est définitive et le client a l'ob
         console.error('Migration de l’historique Supabase impossible, proformas conservées',error);
       }
     }
-    async function loadRemoteBusinessData(userId){
+    async function loadRemoteBusinessData(userId,allowMigration=true,silent=false){
       const token=++remoteDataLoadToken;
       remoteDataLoading=true;remoteDataSource='loading';remoteDataError='';
       try{
@@ -810,7 +810,7 @@ Une fois le bon de commande signée la vente est définitive et le client a l'ob
         if(token!==remoteDataLoadToken||currentUser?.id!==userId)return;
         const localOwner=String(store.remoteOwnerId||'');
         const canMigrate=!localOwner||localOwner===userId;
-        if(canMigrate&&(store.invoices.length||store.events.length)){
+        if(allowMigration&&canMigrate&&(store.invoices.length||store.events.length)){
           await migrateLocalBusinessData(userId);
           remote=await queryRemoteBusinessData(userId);
         }
@@ -819,7 +819,7 @@ Une fois le bon de commande signée la vente est définitive et le client a l'ob
         syncInvoiceCounters();persist();
         remoteDataLoading=false;remoteDataSource='supabase';remoteDataError=remote.eventsError?remoteErrorText(remote.eventsError):'';
         renderArchive();renderDashboard();renderDocument();if(activeTab==='clients')renderClientDirectory();if(activeTab==='history')renderHistory();
-        toast(remote.eventsError
+        if(!silent)toast(remote.eventsError
           ? `${store.invoices.length} archive${store.invoices.length>1?'s':''} chargée${store.invoices.length>1?'s':''} depuis Supabase. Historique indisponible pour le moment.`
           : `${store.invoices.length} archive${store.invoices.length>1?'s':''} et ${store.events.length} action${store.events.length>1?'s':''} chargées depuis Supabase.`);
       }catch(error){
@@ -828,8 +828,22 @@ Une fois le bon de commande signée la vente est définitive et le client a l'ob
         if(store.remoteOwnerId&&store.remoteOwnerId!==userId){store.invoices=[];store.events=[];currentId=null}
         console.error('Chargement des archives/historique Supabase impossible',error);
         renderArchive();renderDashboard();if(activeTab==='history')renderHistory();
-        toast(remoteSchemaError(error)?'Exécutez supabase/proformas-history.sql pour activer les archives et l’historique Supabase.':'Archives et historique Supabase indisponibles : conservation locale temporaire.');
+        if(!silent)toast(remoteSchemaError(error)?'Exécutez supabase/proformas-history.sql pour activer les archives et l’historique Supabase.':'Archives et historique Supabase indisponibles : conservation locale temporaire.');
       }
+    }
+    let remoteRefreshTimer=null,remoteRefreshBusy=false;
+    function stopRemoteRefresh(){if(remoteRefreshTimer){clearInterval(remoteRefreshTimer);remoteRefreshTimer=null}}
+    function startRemoteRefresh(){
+      stopRemoteRefresh();
+      if(!currentUser)return;
+      remoteRefreshTimer=setInterval(()=>{
+        if(document.visibilityState==='visible'&&activeTab!=='editor')void refreshRemoteBusinessData();
+      },30000);
+    }
+    async function refreshRemoteBusinessData(){
+      if(!currentUser||!supabase||remoteDataLoading||remoteRefreshBusy||activeTab==='editor')return;
+      remoteRefreshBusy=true;
+      try{await loadRemoteBusinessData(currentUser.id,false,true)}finally{remoteRefreshBusy=false}
     }
     const formatDateTime=value=>{
       const time=Date.parse(value||'');
@@ -937,7 +951,7 @@ Une fois le bon de commande signée la vente est définitive et le client a l'ob
       if(draft.mode==='turbo'&&!draft.clientId)return draft.turboClient||'Client à renseigner';
       return (clientVisible('company')&&draft.clientCompany)||(clientVisible('contact')&&draft.clientContact)||(draft.mode==='turbo'?draft.turboClient:'Client à renseigner');
     }
-    function switchTab(tab){activeTab=tab;$('#workspace').classList.toggle('editor-layout',tab==='editor');$('#conditionsPanel').classList.toggle('hidden',tab!=='editor');$$('.tab').forEach(el=>el.classList.toggle('active',el.dataset.tab===tab));['dashboard','editor','archive','clients','history','settings'].forEach(name=>$(`#${name}Panel`).classList.toggle('hidden',name!==tab));if(tab==='dashboard')renderDashboard();if(tab==='archive')renderArchive();if(tab==='clients')renderClientDirectory();if(tab==='history')renderHistory();if(tab==='settings')fillProfile()}
+    function switchTab(tab){activeTab=tab;$('#workspace').classList.toggle('editor-layout',tab==='editor');$('#conditionsPanel').classList.toggle('hidden',tab!=='editor');$$('.tab').forEach(el=>el.classList.toggle('active',el.dataset.tab===tab));['dashboard','editor','archive','clients','history','settings'].forEach(name=>$(`#${name}Panel`).classList.toggle('hidden',name!==tab));if(tab==='dashboard')renderDashboard();if(tab==='archive')renderArchive();if(tab==='clients'){renderClientDirectory();void refreshRemoteBusinessData()}if(tab==='history')renderHistory();if(tab==='settings')fillProfile()}
     function applyBrand(){// La palette de l'application reste Voomnet ; chaque facture garde sa couleur propre.
       $('#brandSelect').value=brand.id;$('#archiveBrand').textContent=brand.name;$('#settingsBrand').textContent=brand.name;renderAll()}
     function paymentDueMode(){return draft.paymentDue==='at_order'?'at_order':draft.paymentDue?'date':''}
@@ -1224,7 +1238,7 @@ Une fois le bon de commande signée la vente est définitive et le client a l'ob
       if(remoteDataLoading){toast('Actualisation déjà en cours.');return}
       const button=$('#refreshClientRequestsBtn');
       if(button){button.disabled=true;button.textContent='Actualisation…'}
-      try{await loadRemoteBusinessData(currentUser.id)}finally{if(button){button.disabled=false;button.textContent='Actualiser'}}
+      try{await loadRemoteBusinessData(currentUser.id,false,false)}finally{if(button){button.disabled=false;button.textContent='Actualiser'}}
     }
     const isClientRequestRecord=record=>record?.source==='client_form'||Boolean(record?.requestId);
     const invoiceGateReady=record=>isClientRequestRecord(record)&&record.validationStatus==='validated'&&Boolean(record.orderConfirmedAt)&&Boolean(record.paymentReceivedAt)&&!record.invoiceNumber;
@@ -1662,9 +1676,11 @@ Une fois le bon de commande signée la vente est définitive et le client a l'ob
         $('#userGreeting').textContent=`Bonjour ${authDisplayName(currentUser)}`;
         syncAccountSecurity();
         renderDocument();
+        startRemoteRefresh();
         void loadContactsFromSupabase(currentUser.id);
         if(previousUserId!==currentUser.id)void loadRemoteBusinessData(currentUser.id);
       }else{
+        stopRemoteRefresh();
         contactsLoadToken++;remoteDataLoadToken++;contactsLoading=false;contactsError='';contactsSource='local';remoteDataLoading=false;remoteDataSource='local';remoteDataError='';
         $('#authScreen').classList.remove('hidden');
         $('#userZone').classList.add('hidden');
@@ -1828,6 +1844,8 @@ Une fois le bon de commande signée la vente est définitive et le client a l'ob
       }finally{button.disabled=false;button.textContent='Modifier le mot de passe'}
     }
     $('#passwordChangeForm').addEventListener('submit',changeUserPassword);
+    document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')void refreshRemoteBusinessData()});
+    window.addEventListener('focus',()=>void refreshRemoteBusinessData());
     $('#openAccountSecurityBtn').addEventListener('click',()=>{if(!currentUser){toast('Connectez-vous pour modifier votre mot de passe.');return}switchTab('settings');syncAccountSecurity();$('#currentPassword').focus()});
     $('#logoutBtn').addEventListener('click',async ()=>{if(!supabase)return;await supabase.auth.signOut();applySession(null)});
     if(PUBLIC_FORM_TOKEN)void initPublicClientForm();

@@ -97,21 +97,30 @@ Le formulaire client intégré est public uniquement lorsqu’il est ouvert avec
 
 Le formulaire impose : nom de l’entreprise, NCC, RCCM, localisation, personne en charge de la validation, e-mail, téléphone, au moins une référence avec quantité et mode de paiement (virement ou espèce). La réponse crée une fiche dans le répertoire partagé, une demande et une proforma avec les lignes reçues. La proforma est automatiquement routée vers la marque/site du lien utilisé : son numéro, son `brand_id`, son logo, ses coordonnées et son snapshot d’identité correspondent à ce site. Les prix ne sont pas demandés au client : la proforma est créée en attente de prix ; l’équipe complète les prix HT dans l’éditeur avant validation. Les champs **Livraison / exécution** et **Note / conditions particulières** sont toujours préremplis avec les conditions commerciales standard ; une valeur personnalisée non vide est conservée.
 
-Après un appel téléphonique, l’utilisateur ouvre **Archives** et clique sur **Confirmer la validation**. Cette confirmation globale enregistre simultanément la validation orale de la proforma, la commande confirmée et le paiement reçu. Le badge vert **Proforma validée** ainsi que les deux indicateurs séparés **Commande confirmée** et **Paiement reçu** sont alors affichés, et l’action est inscrite dans l’historique. Le bouton **Générer la facture** devient immédiatement disponible : il crée un nouveau numéro `FAC-…`, conserve le lien avec la proforma et fige une copie de ses données dans `public.invoices`.
+Le workflow commercial est séquencé ainsi :
+
+1. La demande publique crée une proforma `pending_pricing`, sans prix ; l’équipe complète les prix HT et enregistre la proforma.
+2. Dans **Archives**, le bouton **Envoyer la proforma** devient disponible lorsque les lignes sont complètes et que le montant est supérieur à zéro. L’e-mail utilise l’adresse client enregistrée dans la proforma et joint le PDF généré côté serveur.
+3. Après confirmation du client, l’utilisateur ouvre **Archives** et clique sur **Confirmer la validation**. Cette confirmation globale enregistre simultanément la validation orale de la proforma, la commande confirmée et le paiement reçu. Le badge vert **Proforma validée**, ainsi que les indicateurs **Commande confirmée** et **Paiement reçu**, sont alors affichés et l’action est inscrite dans l’historique.
+4. Le bouton **Générer la facture** devient disponible après cette confirmation globale. Il crée un numéro `FAC-…`, conserve le lien avec la proforma et fige une copie de ses données dans `public.invoices`.
+5. Lors de la génération, l’application tente automatiquement l’envoi de la facture finale par e-mail. Si l’envoi échoue, la facture reste créée et le bouton **Envoyer par e-mail** permet de retenter l’envoi depuis les archives.
 
 Avant d’utiliser cette fonctionnalité :
 
-1. Exécutez `supabase/client-forms.sql` dans **Supabase → SQL Editor**, après `supabase/proformas-history.sql` et `supabase/contacts-write.sql`.
+1. Exécutez `supabase/proformas-history.sql`, puis `supabase/contacts-write.sql`, puis `supabase/client-forms.sql` dans **Supabase → SQL Editor**. Exécutez ensuite `supabase/proforma-email.sql` et `supabase/invoice-email.sql` pour activer les journaux d’envoi.
 2. Dans Vercel, configurez côté serveur uniquement :
    - `SUPABASE_URL` ;
-   - `SUPABASE_SERVICE_ROLE_KEY` (secret, jamais dans le navigateur ou Git).
-3. Redéployez l’application. L’API `api/client-form.js` utilise la clé service uniquement côté serveur pour vérifier le lien, enregistrer la demande et créer la proforma au nom du compte qui a généré le lien.
+   - `SUPABASE_ANON_KEY` pour vérifier les sessions des utilisateurs ;
+   - `SUPABASE_SERVICE_ROLE_KEY` pour le formulaire public et les opérations serveur (secret, jamais dans le navigateur ou Git).
+3. Redéployez l’application. L’API `api/client-form.js` utilise la clé service uniquement côté serveur pour vérifier le lien, enregistrer la demande, créer la proforma au nom du compte qui a généré le lien et générer son numéro.
 
 Si `client-forms.sql` n’est pas exécuté, les liens et les demandes publiques restent désactivés ; les fonctions d’authentification et de facturation existantes continuent de fonctionner après exécution des scripts Supabase précédents.
 
 ## Envoi des proformas et factures par e-mail
 
-Après saisie et enregistrement des prix, le bouton **Envoyer la proforma** permet d’envoyer la proforma au client. À la fin du workflow, après la confirmation globale de la proforma, de la commande et du paiement, le bouton de génération crée la facture puis appelle `api/send-invoice-email.js`. Les deux routes génèrent le PDF côté serveur avec PDFKit et l’envoient via **Microsoft Graph / Exchange Online**. Un renvoi manuel reste disponible depuis les archives si le premier envoi échoue.
+L’envoi des documents suit le workflow commercial décrit ci-dessus : la proforma est envoyée après saisie et enregistrement des prix, puis la facture finale est générée après confirmation globale de la validation, de la commande et du paiement. Les deux routes (`api/send-proforma-email.js` et `api/send-invoice-email.js`) génèrent le PDF côté serveur avec PDFKit et l’envoient via **Microsoft Graph / Exchange Online**. La génération de la facture tente automatiquement son envoi ; un bouton **Envoyer par e-mail** reste disponible dans les archives pour un nouvel essai si nécessaire.
+
+Le formulaire public ne transmet jamais un PDF directement au client et aucun PDF n’est envoyé automatiquement par WhatsApp. Il crée uniquement la proforma dans Supabase ; l’équipe complète les prix avant l’envoi de la proforma.
 
 Les e-mails de documents utilisent la boîte Microsoft 365 de la marque/site du document. L’expéditeur ne peut pas être choisi depuis le navigateur : il est déterminé côté serveur par la marque.
 
@@ -127,7 +136,7 @@ La vérification actuelle des boîtes Exchange a confirmé les boîtes de marque
 
 Les boîtes individuelles non sélectionnées dans Exchange ne sont pas utilisées comme expéditeurs de marque. Les marques **Magasin Informatique**, **Onduleurs**, **Licences**, **Groupes Électrogènes** et **Entreprise Informatique** n’ont pas encore de boîte de marque sélectionnée dans cette vérification ; leur envoi Graph restera indisponible tant qu’une boîte autorisée ne sera pas configurée.
 
-Cette capture confirme la disponibilité des boîtes, mais ne remplace pas la configuration de l’application Entra ID : `Mail.Send`, consentement administrateur et restriction Exchange aux seules boîtes autorisées restent nécessaires.
+Cette capture confirme la disponibilité des boîtes. Dans le périmètre actuellement retenu, aucune restriction Exchange RBAC supplémentaire n’est configurée : seules les variables `MS_MAILBOX_*` des boîtes disponibles sont renseignées dans Vercel et les autres marques restent sans expéditeur configuré. Cette limitation est applicative et opérationnelle ; la permission Entra `Mail.Send` reste potentiellement large au niveau du tenant. Une restriction Exchange RBAC pourra être ajoutée ultérieurement si une protection tenant-wide est requise.
 
 Variables serveur Vercel à configurer :
 
@@ -139,7 +148,7 @@ Variables serveur Vercel à configurer :
 - `MS_REPLY_TO_*` et `MS_FROM_NAME_*` : variables facultatives de réponse et de nom affiché ;
 - `SUPABASE_URL`, `SUPABASE_ANON_KEY` et `SUPABASE_SERVICE_ROLE_KEY` pour les routes serveur.
 
-L’application Microsoft Entra ID doit recevoir la permission applicative Microsoft Graph `Mail.Send` avec consentement administrateur. L’administrateur Exchange Online doit limiter cette application aux seules boîtes de marque autorisées. Les appels sont effectués uniquement côté serveur par `api/microsoft-graph.js` avec le flux client credentials ; aucun jeton Microsoft ni secret n’est envoyé au navigateur.
+L’application Microsoft Entra ID doit recevoir la permission applicative Microsoft Graph `Mail.Send` avec consentement administrateur. Dans la configuration actuelle, la limitation repose sur les boîtes `MS_MAILBOX_*` configurées côté serveur et non sur une restriction Exchange RBAC ; ne renseignez donc pas les variables des marques dont les boîtes ne sont pas disponibles. Les appels sont effectués uniquement côté serveur par `api/microsoft-graph.js` avec le flux client credentials ; aucun jeton Microsoft ni secret n’est envoyé au navigateur.
 
 Les messages utilisent `POST /users/{boîte}/sendMail`, joignent le PDF et demandent sa conservation dans les éléments envoyés. Microsoft Graph renvoie un accusé d’acceptation par Exchange ; le suivi détaillé des livraisons et des rebonds nécessiterait une évolution séparée.
 

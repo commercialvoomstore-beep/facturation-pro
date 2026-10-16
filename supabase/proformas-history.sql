@@ -92,7 +92,7 @@ create index if not exists activity_events_user_type_occurred_lookup
 create table if not exists public.proforma_sequences (
   user_id uuid not null references auth.users (id) on delete cascade,
   brand_id text not null,
-  year integer not null check (year between 2000 and 2200),
+  year integer not null check (year between 2000 and 3000),
   last_value integer not null default 0 check (last_value >= 0),
   primary key (user_id, brand_id, year)
 );
@@ -102,7 +102,7 @@ create table if not exists public.proforma_sequences (
 create table if not exists public.proforma_number_reservations (
   user_id uuid not null references auth.users (id) on delete cascade,
   brand_id text not null,
-  year integer not null check (year between 2000 and 2200),
+  year integer not null check (year between 2000 and 3000),
   number text not null,
   created_at timestamptz not null default timezone('utc', now()),
   primary key (user_id, brand_id, year, number)
@@ -111,11 +111,20 @@ create table if not exists public.proforma_number_reservations (
 create table if not exists public.invoice_number_reservations (
   user_id uuid not null references auth.users (id) on delete cascade,
   brand_id text not null,
-  year integer not null check (year between 2000 and 2200),
+  year integer not null check (year between 2000 and 3000),
   number text not null,
   created_at timestamptz not null default timezone('utc', now()),
   primary key (user_id, brand_id, year, number)
 );
+
+-- Le segment de numérotation de l’application est 2620. Ces contraintes
+-- remplacent l’ancienne limite 2000–2200, y compris sur les tables existantes.
+alter table public.proforma_sequences drop constraint if exists proforma_sequences_year_check;
+alter table public.proforma_sequences add constraint proforma_sequences_year_check check (year between 2000 and 3000);
+alter table public.proforma_number_reservations drop constraint if exists proforma_number_reservations_year_check;
+alter table public.proforma_number_reservations add constraint proforma_number_reservations_year_check check (year between 2000 and 3000);
+alter table public.invoice_number_reservations drop constraint if exists invoice_number_reservations_year_check;
+alter table public.invoice_number_reservations add constraint invoice_number_reservations_year_check check (year between 2000 and 3000);
 
 alter table public.proforma_number_reservations enable row level security;
 alter table public.invoice_number_reservations enable row level security;

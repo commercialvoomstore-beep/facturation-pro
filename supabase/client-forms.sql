@@ -119,10 +119,15 @@ create index if not exists customer_request_items_request_lookup
 create table if not exists public.invoice_sequences (
   user_id uuid not null references auth.users (id) on delete cascade,
   brand_id text not null,
-  year integer not null check (year between 2000 and 2200),
+  year integer not null check (year between 2000 and 3000),
   last_value integer not null default 0 check (last_value >= 0),
   primary key (user_id, brand_id, year)
 );
+
+-- Le segment de numérotation de l’application est 2620 ; l’ancienne
+-- contrainte 2000–2200 empêchait la création de factures futures.
+alter table public.invoice_sequences drop constraint if exists invoice_sequences_year_check;
+alter table public.invoice_sequences add constraint invoice_sequences_year_check check (year between 2000 and 3000);
 
 create table if not exists public.invoices (
   id uuid primary key default gen_random_uuid(),

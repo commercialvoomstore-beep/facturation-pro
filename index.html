@@ -772,11 +772,17 @@ Une fois le bon de commande signée la vente est définitive et le client a l'ob
       return rows;
     }
     async function queryRemoteBusinessData(userId){
-      const [proformas,events]=await Promise.all([
-        fetchRemoteRows('proformas',REMOTE_PROFORMA_COLUMNS,'updated_at',userId,true),
-        fetchRemoteRows('activity_events',REMOTE_EVENT_COLUMNS,'occurred_at',userId)
-      ]);
-      return {invoices:proformas.map(normalizeRemoteProforma),events:events.map(normalizeRemoteEvent)};
+      // Une panne du journal ne doit pas empêcher le chargement ni la mise à jour
+      // des proformas : les deux données sont persistées dans des tables distinctes.
+      const proformas=await fetchRemoteRows('proformas',REMOTE_PROFORMA_COLUMNS,'updated_at',userId,true);
+      let events=[];let eventsError=null;
+      try{
+        events=await fetchRemoteRows('activity_events',REMOTE_EVENT_COLUMNS,'occurred_at',userId);
+      }catch(error){
+        eventsError=error;
+        console.error('Historique Supabase indisponible, archives conservées',error);
+      }
+      return {invoices:proformas.map(normalizeRemoteProforma),events:events.map(normalizeRemoteEvent),eventsError};
     }
     async function migrateLocalBusinessData(userId){
       const localInvoices=Array.isArray(store.invoices)?store.invoices:[];
@@ -791,7 +797,10 @@ Une fois le bon de commande signée la vente est définitive et le client a l'ob
         if(invoice.createdAt&&!tracked.has(String(invoice.id)))events.push({id:`legacy-${invoice.id}`,type:'invoice.created',at:invoice.createdAt,invoiceId:invoice.id,brandId:invoice.brandId,number:invoice.number,client:invoiceClient(invoice),amount:invoice.amount,legacy:true});
       }
       const eventRows=events.map(event=>remoteActivityRow(event,'localStorage-migration',userId));
-      await insertRemoteActivityRows(eventRows);
+      try{await insertRemoteActivityRows(eventRows)}catch(error){
+        // L’historique ne doit pas empêcher la migration ni le chargement des proformas.
+        console.error('Migration de l’historique Supabase impossible, proformas conservées',error);
+      }
     }
     async function loadRemoteBusinessData(userId){
       const token=++remoteDataLoadToken;
@@ -808,9 +817,11 @@ Une fois le bon de commande signée la vente est définitive et le client a l'ob
         if(token!==remoteDataLoadToken||currentUser?.id!==userId)return;
         store.invoices=remote.invoices;store.events=remote.events;store.remoteOwnerId=userId;
         syncInvoiceCounters();persist();
-        remoteDataLoading=false;remoteDataSource='supabase';remoteDataError='';
+        remoteDataLoading=false;remoteDataSource='supabase';remoteDataError=remote.eventsError?remoteErrorText(remote.eventsError):'';
         renderArchive();renderDashboard();renderDocument();if(activeTab==='clients')renderClientDirectory();if(activeTab==='history')renderHistory();
-        toast(`${store.invoices.length} archive${store.invoices.length>1?'s':''} et ${store.events.length} action${store.events.length>1?'s':''} chargées depuis Supabase.`);
+        toast(remote.eventsError
+          ? `${store.invoices.length} archive${store.invoices.length>1?'s':''} chargée${store.invoices.length>1?'s':''} depuis Supabase. Historique indisponible pour le moment.`
+          : `${store.invoices.length} archive${store.invoices.length>1?'s':''} et ${store.events.length} action${store.events.length>1?'s':''} chargées depuis Supabase.`);
       }catch(error){
         if(token!==remoteDataLoadToken||currentUser?.id!==userId)return;
         remoteDataLoading=false;remoteDataSource='fallback';remoteDataError=remoteErrorText(error);

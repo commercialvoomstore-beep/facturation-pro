@@ -1265,7 +1265,9 @@ Une fois le bon de commande signée la vente est définitive et le client a l'ob
       if(!/^\d{4}-\d{2}-\d{2}$/.test(draft.date)){toast('Choisissez une date d’émission valide.');return}
       if([draft.deliveryDate,draft.paymentDue].some(date=>date&&date!=='at_order'&&(!/^\d{4}-\d{2}-\d{2}$/.test(date)||date<draft.date))){toast('Les dates de livraison et de règlement doivent suivre la date d’émission.');return}
       if(remoteDataLoading){toast('Chargement des archives Supabase en cours. Réessayez dans un instant.');return}
-      const useRemote=remoteBusinessReady(),existing=getRecord(),previousStore=clone(store),previousId=currentId,amount=calculate().ttc,now=new Date().toISOString();
+      const useRemote=remoteBusinessReady(),existing=getRecord();
+      if(existing&&(existing.source==='client_form'||existing.requestId)&&!useRemote){toast('Cette demande client doit être actualisée depuis Supabase avant sa mise à jour. Cliquez sur « Actualiser » dans l’onglet Clients.');return}
+      const previousStore=clone(store),previousId=currentId,amount=calculate().ttc,now=new Date().toISOString();
       let record,event,historyPending=false;
       try{
         if(existing){
@@ -1296,7 +1298,7 @@ Une fois le bon de commande signée la vente est définitive et le client a l'ob
         persist();
         renderDocument();renderArchive();refreshActivityViews();
         if(historyPending)toast('Proforma enregistrée, mais l’événement historique sera resynchronisé ultérieurement.');
-        else toast(!useRemote&&!storageAvailable?'Proforma temporaire : ouvrez le HTML hors aperçu pour l’enregistrer durablement.':(existing?'Proforma mise à jour.':'Proforma enregistrée et numérotée.'));
+        else toast(!useRemote&&!storageAvailable?'Proforma temporaire : ouvrez le HTML hors aperçu pour l’enregistrer durablement.':(existing?(useRemote?'Proforma mise à jour dans Supabase.':'Proforma mise à jour localement uniquement.'):'Proforma enregistrée et numérotée.'));
       }catch(error){
         store=previousStore;currentId=previousId;renderAll();
         console.error('Enregistrement de la proforma impossible',error);

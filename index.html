@@ -931,6 +931,13 @@ Une fois le bon de commande signée la vente est définitive et le client a l'ob
       map.set(key,{...previous,status:'sent',hasSuccessful:true,attemptNumber:Number(result.attemptNumber)||1,providerMessageId:String(result.messageId||previous.providerMessageId||''),sentAt:new Date().toISOString(),updatedAt:new Date().toISOString()});
       renderArchive();
     }
+    function markEmailDeliveryFailure(kind,entityId,error){
+      const map=kind==='proforma'?proformaEmailDeliveries:invoiceEmailDeliveries;
+      const key=String(entityId),previous=map.get(key)||{};
+      if(previous.status==='sending')return;
+      map.set(key,{...previous,status:'failed',attemptNumber:Number(previous.attemptNumber)||1,errorMessage:remoteErrorText(error),updatedAt:new Date().toISOString()});
+      renderArchive();
+    }
     async function queryRemoteBusinessData(userId){
       // Une panne du journal ne doit pas empêcher le chargement ni la mise à jour
       // des proformas : les deux données sont persistées dans des tables distinctes.
@@ -1693,7 +1700,7 @@ Une fois le bon de commande signée la vente est définitive et le client a l'ob
           emailResult=await sendInvoiceEmail(invoice.id,false);
           applyEmailDeliveryResult('invoice',invoice.id,emailResult);
         }catch(error){console.error('Envoi de la facture impossible',error);emailResult={ok:false,error:remoteErrorText(error)}}
-        finally{await refreshEmailDeliveryStatus()}
+        finally{await refreshEmailDeliveryStatus();if(emailResult&&!emailResult.ok)markEmailDeliveryFailure('invoice',invoice.id,emailResult.error)}
         if(emailResult?.ok)toast(`Facture définitive ${invoice.number} générée et envoyée à ${record.data.clientEmail}.`);
         else toast(`Facture ${invoice.number} conservée, mais l’e-mail n’a pas été envoyé : ${emailResult?.error||'configuration à vérifier'}. Vous pouvez la renvoyer.`);
       }catch(error){console.error('Génération de facture impossible',error);toast('Facture impossible : '+remoteErrorText(error))}
@@ -1707,23 +1714,25 @@ Une fois le bon de commande signée la vente est définitive et le client a l'ob
       if(btn.dataset.action==='proforma-email'||btn.dataset.action==='proforma-resend'){
         const resend=btn.dataset.action==='proforma-resend';
         if(resend&&!confirm(`Renvoyer la proforma ${item.number} par e-mail ?`))return;
+        let failure=null;
         try{
           const result=await sendProformaEmail(item.id,resend);
           applyEmailDeliveryResult('proforma',item.id,result);
           toast(result.alreadySent?'La proforma a déjà été envoyée par e-mail.':(resend?'Proforma renvoyée par e-mail au client.':'Proforma envoyée par e-mail au client.'));
-        }catch(error){toast('Envoi impossible : '+remoteErrorText(error))}
-        finally{await refreshEmailDeliveryStatus()}
+        }catch(error){failure=error;toast('Envoi impossible : '+remoteErrorText(error))}
+        finally{await refreshEmailDeliveryStatus();if(failure)markEmailDeliveryFailure('proforma',item.id,failure)}
         return;
       }
       if(btn.dataset.action==='email'){
         const resend=Boolean(invoiceEmailDeliveries.get(String(item.invoiceId)));
         if(resend&&!confirm(`Renvoyer la facture ${item.invoiceNumber} par e-mail ?`))return;
+        let failure=null;
         try{
           const result=await sendInvoiceEmail(item.invoiceId,resend);
           applyEmailDeliveryResult('invoice',item.invoiceId,result);
           toast(result.alreadySent?'La facture a déjà été envoyée par e-mail.':(resend?'Facture renvoyée par e-mail au client.':'Facture envoyée par e-mail au client.'));
-        }catch(error){toast('Envoi impossible : '+remoteErrorText(error))}
-        finally{await refreshEmailDeliveryStatus()}
+        }catch(error){failure=error;toast('Envoi impossible : '+remoteErrorText(error))}
+        finally{await refreshEmailDeliveryStatus();if(failure)markEmailDeliveryFailure('invoice',item.invoiceId,failure)}
         return;
       }
       if(btn.dataset.action==='open'){openSavedInvoice(item);return}

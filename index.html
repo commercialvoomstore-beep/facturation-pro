@@ -2119,17 +2119,33 @@ Une fois le bon de commande signée la vente est définitive et le client a l'ob
       }finally{setAuthBusy(false)}
     });
     let publicFormItemCount=0;
+    let publicFormItemsState=[];
     function publicFormFeedback(message,state='error'){
       const element=$('#publicFormMessage');
       element.textContent=message;
       element.className=`public-form-message ${state}`;
       element.classList.remove('hidden');
     }
+    function capturePublicFormItems(){
+      const container=$('#publicFormItems');
+      if(!container)return;
+      publicFormItemsState=[...container.querySelectorAll('[data-public-item]')].map(row=>({
+        reference:row.querySelector('[data-public-reference]')?.value||'',
+        quantity:row.querySelector('[data-public-quantity]')?.value||''
+      }));
+    }
     function renderPublicFormItems(){
       const container=$('#publicFormItems');
       if(!container)return;
-      if(!publicFormItemCount)publicFormItemCount=1;
+      if(!publicFormItemsState.length)publicFormItemsState=[{reference:'',quantity:''}];
+      publicFormItemCount=publicFormItemsState.length;
       container.innerHTML=Array.from({length:publicFormItemCount},(_,index)=>`<div class="public-form-item" data-public-item="${index}"><label class="input-wrap"><span class="field-label">Référence / désignation <span class="public-form-required">*</span></span><input class="field" data-public-reference required maxlength="180" placeholder="Référence à commander"></label><label class="input-wrap"><span class="field-label">Quantité <span class="public-form-required">*</span></span><input class="field" data-public-quantity required type="number" min="0.01" step="0.01" placeholder="1"></label>${index===0?'<span></span>':`<button type="button" class="public-form-remove" data-public-remove="${index}" aria-label="Supprimer cette référence">×</button>`}</div>`).join('');
+      publicFormItemsState.forEach((item,index)=>{
+        const row=container.querySelector(`[data-public-item="${index}"]`);
+        if(!row)return;
+        row.querySelector('[data-public-reference]').value=item.reference;
+        row.querySelector('[data-public-quantity]').value=item.quantity;
+      });
     }
     function publicPaymentValue(){return document.querySelector('input[name="publicPaymentMethod"]:checked')?.value||''}
     async function initPublicClientForm(){
@@ -2142,10 +2158,20 @@ Une fois le bon de commande signée la vente est définitive et le client a l'ob
       $('#publicFormItems').addEventListener('click',event=>{
         const remove=event.target.closest('[data-public-remove]');
         if(!remove)return;
-        publicFormItemCount=Math.max(1,publicFormItemCount-1);
+        capturePublicFormItems();
+        const index=Number(remove.dataset.publicRemove);
+        if(Number.isInteger(index))publicFormItemsState.splice(index,1);
+        if(!publicFormItemsState.length)publicFormItemsState=[{reference:'',quantity:''}];
         renderPublicFormItems();
       });
-      $('#publicAddItem').addEventListener('click',()=>{publicFormItemCount=Math.min(20,publicFormItemCount+1);renderPublicFormItems()});
+      $('#publicAddItem').addEventListener('click',()=>{
+        capturePublicFormItems();
+        if(publicFormItemsState.length>=20)return;
+        const newIndex=publicFormItemsState.length;
+        publicFormItemsState.push({reference:'',quantity:''});
+        renderPublicFormItems();
+        requestAnimationFrame(()=>$('#publicFormItems').querySelector(`[data-public-item="${newIndex}"] [data-public-reference]`)?.focus());
+      });
       $$('input[name="publicPaymentMethod"]').forEach(input=>input.addEventListener('change',()=>{
         $$('input[name="publicPaymentMethod"]').forEach(option=>option.closest('.pill')?.classList.toggle('active',option.checked));
       }));

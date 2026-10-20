@@ -125,12 +125,17 @@ async function sendGraphMail({ sender, to, cc = [], subject, text, html, attachm
       error.status = 422;
       throw error;
     }
-    return {
+    const graphAttachment = {
       '@odata.type': '#microsoft.graph.fileAttachment',
       name: clean(attachment.name, 180),
       contentType: clean(attachment.contentType || 'application/pdf', 120),
       contentBytes
     };
+    if (attachment.isInline) {
+      graphAttachment.isInline = true;
+      graphAttachment.contentId = clean(attachment.contentId || attachment.name, 180);
+    }
+    return graphAttachment;
   });
   const hasHtml = Boolean(String(html || '').trim());
   const message = {

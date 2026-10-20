@@ -367,6 +367,8 @@
       .workspace.editor-layout .editor-right-column{display:flex;flex-direction:column;gap:18px;min-width:0}
       .workspace:not(.editor-layout) .editor-right-column{display:none!important}
     }
+      .dashboard-filters{display:grid;grid-template-columns:minmax(180px,1.35fr) repeat(2,minmax(145px,1fr)) auto;align-items:end;gap:11px;padding:14px;margin:0 0 15px;background:#fbfaff;border:1px solid #e9e5f1;border-radius:14px}.dashboard-filter-field{min-width:0}.dashboard-filter-field .field-label{margin-bottom:6px}.dashboard-filter-field .field{min-height:40px}.dashboard-reset{min-height:40px;padding:9px 13px}.dashboard-filters+.dashboard-stats{margin-top:0}.dashboard-invoice-count{display:block;margin-top:4px}
+    @media(max-width:700px){.dashboard-filters{grid-template-columns:1fr 1fr}.dashboard-filter-field:first-child{grid-column:1/-1}.dashboard-reset{width:100%}}
   </style>
 </head>
 <body>
@@ -436,12 +438,17 @@
       <aside class="panel editor" aria-label="Panneau de travail">
         <nav class="tabbar" aria-label="Sections"><button type="button" class="tab active" data-tab="dashboard">◫ &nbsp;Tableau de bord</button><button type="button" class="tab" data-tab="editor">✎ &nbsp;Éditeur</button><button type="button" class="tab" data-tab="archive">▤ &nbsp;Archives</button><button type="button" class="tab" data-tab="clients">♧ &nbsp;Clients</button><button type="button" class="tab" data-tab="history">◷ &nbsp;Historique</button><button type="button" class="tab" data-tab="settings">◉ &nbsp;Identité</button></nav>
         <div id="dashboardPanel" class="panel-body">
-          <div class="section-head"><h2 class="section-title">Tableau de bord</h2><span class="micro">9 marques · sur cet appareil</span></div>
+          <div class="section-head"><h2 class="section-title">Tableau de bord</h2><span class="micro">Toutes les marques · toutes les créations accessibles</span></div>
           <div class="dashboard-hero"><span class="dashboard-hero-label">VOTRE ACTIVITÉ EN UN COUP D’ŒIL</span><strong>Bienvenue dans votre espace.</strong><span>Retrouvez vos proformas, vos clients et les dernières actions enregistrées.</span></div>
-          <label class="dashboard-filter"><span class="field-label">Périmètre des proformas</span><select id="dashboardScope" class="field"><option value="all">Les 9 marques</option><option value="brand">Marque active uniquement</option></select></label>
+          <div class="dashboard-filters" aria-label="Filtres des proformas du tableau de bord">
+            <label class="dashboard-filter-field"><span class="field-label">Marque</span><select id="dashboardBrandFilter" class="field"><option value="all">Toutes les marques</option></select></label>
+            <label class="dashboard-filter-field"><span class="field-label">Date de début</span><input id="dashboardDateFrom" class="field" type="date"></label>
+            <label class="dashboard-filter-field"><span class="field-label">Date de fin</span><input id="dashboardDateTo" class="field" type="date"></label>
+            <button type="button" id="dashboardResetFilters" class="mini-btn dashboard-reset">Réinitialiser</button>
+          </div>
           <div class="dashboard-stats" aria-label="Indicateurs"><div class="dash-stat"><span>Proformas conservées</span><strong id="dashInvoices">0</strong></div><div class="dash-stat"><span>Montant TTC proposé</span><strong id="dashAmount">0 FCFA</strong></div><div class="dash-stat"><span>Clients partagés</span><strong id="dashClients">0</strong></div><div class="dash-stat"><span>Créées ce mois-ci</span><strong id="dashMonth">0</strong></div></div>
-          <p class="dashboard-disclaimer">Le montant additionne les proformas archivées, pas les encaissements. Les clients sont communs aux 9 marques.</p>
-          <div class="section"><div class="section-head"><h3 class="section-title">Proformas récentes</h3><button type="button" id="dashboardArchivesBtn" class="mini-btn">Toutes les archives ↗</button></div><div id="dashRecent" class="dashboard-feed"></div></div>
+          <p class="dashboard-disclaimer">Les indicateurs et la liste tiennent compte des filtres sélectionnés. Les clients sont communs aux 9 marques.</p>
+          <div class="section"><div class="section-head"><div><h3 class="section-title">Proformas créées</h3><span id="dashboardInvoiceCount" class="micro"></span></div><button type="button" id="dashboardArchivesBtn" class="mini-btn">Toutes les archives ↗</button></div><div id="dashRecent" class="dashboard-feed"></div></div>
           <div class="section"><div class="section-head"><h3 class="section-title">Dernières actions</h3><button type="button" id="dashboardHistoryBtn" class="mini-btn">Tout l’historique ↗</button></div><div id="dashActivity" class="dashboard-feed"></div></div>
           <div class="dashboard-shortcuts"><button type="button" id="dashboardNewBtn" class="primary-btn">＋ &nbsp; Nouvelle proforma</button><button type="button" id="dashboardClientsBtn" class="secondary-btn">Voir les clients</button></div>
         </div>
@@ -1147,16 +1154,39 @@ Une fois le bon de commande signée la vente est définitive et le client a l'ob
       if(event.type==='identity.updated')return [event.field,event.note].filter(Boolean).join(' · ');
       return [event.client,event.note].filter(Boolean).join(' · ');
     }
+    function dashboardInvoiceDateKey(value){
+      const date=new Date(value||'');
+      if(!Number.isFinite(date.getTime()))return '';
+      return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
+    }
+    function ensureDashboardBrandFilter(){
+      const select=$('#dashboardBrandFilter');
+      if(!select)return 'all';
+      const current=select.value||'all';
+      const options=['<option value="all">Toutes les marques</option>',...BRANDS.map(site=>`<option value="${esc(site.id)}">${esc(site.name)}</option>`)].join('');
+      if(select.dataset.optionsKey!==options){select.innerHTML=options;select.dataset.optionsKey=options}
+      select.value=BRANDS.some(site=>site.id===current)?current:'all';
+      return select.value;
+    }
     function renderDashboard(){
-      const selected=$('#dashboardScope').value;
-      const invoices=store.invoices.filter(i=>selected==='all'||i.brandId===brand.id);
+      const selectedBrand=ensureDashboardBrandFilter();
+      const dateFrom=$('#dashboardDateFrom')?.value||'';
+      const dateTo=$('#dashboardDateTo')?.value||'';
+      const invoices=store.invoices.filter(i=>{
+        if(selectedBrand!=='all'&&i.brandId!==selectedBrand)return false;
+        const created=dashboardInvoiceDateKey(i.createdAt||i.updatedAt);
+        if(dateFrom&&(!created||created<dateFrom))return false;
+        if(dateTo&&(!created||created>dateTo))return false;
+        return true;
+      });
       const now=new Date();
       $('#dashInvoices').textContent=digits(invoices.length);
       $('#dashAmount').textContent=money(invoices.reduce((sum,i)=>sum+(Number(i.amount)||0),0));
       $('#dashClients').textContent=digits(store.clients.length);
       $('#dashMonth').textContent=digits(invoices.filter(i=>{const date=new Date(i.createdAt);return Number.isFinite(date.getTime())&&date.getMonth()===now.getMonth()&&date.getFullYear()===now.getFullYear()}).length);
-      const recent=[...invoices].sort((a,b)=>String(b.createdAt||b.updatedAt||'').localeCompare(String(a.createdAt||a.updatedAt||''))).slice(0,5);
-      $('#dashRecent').innerHTML=recent.length?recent.map(i=>{const needsPricing=i.source==='client_form'&&String(i.status||'').toLowerCase()==='pending_pricing';return `<div class="dashboard-feed-item"><span><strong>${esc(i.number)} · ${esc(invoiceClient(i))}</strong><small>${esc(BRANDS.find(b=>b.id===i.brandId)?.name||'Marque inconnue')} · Créée ${esc(formatDateTime(i.createdAt))}</small><button type="button" class="dashboard-proforma-link" data-dash-invoice="${esc(i.id)}">↗ ${needsPricing?'Compléter les prix':'Ouvrir la proforma'}</button></span><b class="dashboard-feed-amount">${money(i.amount)}</b></div>`}).join(''):'<div class="empty-state">Aucune proforma enregistrée dans ce périmètre.</div>';
+      const recent=[...invoices].sort((a,b)=>String(b.createdAt||b.updatedAt||'').localeCompare(String(a.createdAt||a.updatedAt||'')));
+      $('#dashboardInvoiceCount').textContent=`${digits(recent.length)} résultat${recent.length>1?'s':''} · plus récentes d’abord`;
+      $('#dashRecent').innerHTML=recent.length?recent.map(i=>{const needsPricing=i.source==='client_form'&&String(i.status||'').toLowerCase()==='pending_pricing';return `<div class="dashboard-feed-item"><span><strong>${esc(i.number)} · ${esc(invoiceClient(i))}</strong><small>${esc(BRANDS.find(b=>b.id===i.brandId)?.name||'Marque inconnue')} · Créée ${esc(formatDateTime(i.createdAt))}</small><button type="button" class="dashboard-proforma-link" data-dash-invoice="${esc(i.id)}">↗ ${needsPricing?'Compléter les prix':'Ouvrir la proforma'}</button></span><b class="dashboard-feed-amount">${money(i.amount)}</b></div>`}).join(''):'<div class="empty-state">Aucune proforma enregistrée pour ces filtres.</div>';
       const actions=activityEntries().slice(0,5);
       $('#dashActivity').innerHTML=actions.length?actions.map(e=>`<div class="dashboard-feed-item"><span><strong>${esc(EVENT_TITLES[e.type]||'Action enregistrée')}${e.number?' · '+esc(e.number):''}</strong><small>${esc(formatDateTime(e.at))} · ${esc(e.brandId?BRANDS.find(b=>b.id===e.brandId)?.name||'Marque inconnue':'Répertoire commun')}</small></span></div>`).join(''):'<div class="empty-state">Les actions enregistrées apparaîtront ici.</div>';
     }
@@ -1882,7 +1912,13 @@ Une fois le bon de commande signée la vente est définitive et le client a l'ob
       draft.paymentDue=value==='at_order'?'at_order':value==='date'?(draft.paymentDue==='at_order'?'':draft.paymentDue):'';
       syncPaymentDueControls();syncDraft();renderDocument();
     });
-    $('#dashboardScope').addEventListener('change',renderDashboard);
+    ['dashboardBrandFilter','dashboardDateFrom','dashboardDateTo'].forEach(id=>$('#'+id).addEventListener('change',renderDashboard));
+    $('#dashboardResetFilters').addEventListener('click',()=>{
+      $('#dashboardBrandFilter').value='all';
+      $('#dashboardDateFrom').value='';
+      $('#dashboardDateTo').value='';
+      renderDashboard();
+    });
     $('#dashboardNewBtn').addEventListener('click',newDraft);
     $('#dashboardClientsBtn').addEventListener('click',()=>switchTab('clients'));
     $('#dashboardArchivesBtn').addEventListener('click',()=>switchTab('archive'));

@@ -316,11 +316,22 @@
       .workspace.editor-layout .preview-area{grid-column:2;grid-row:1}
       .workspace.editor-layout .conditions-panel{grid-column:3;grid-row:1;position:sticky;top:108px;max-height:calc(100vh - 128px)}
     }
+    @media(min-width:851px){
+      /* En édition, les conditions passent sous le formulaire : l’aperçu récupère toute la colonne centrale. */
+      .workspace.editor-layout{grid-template-columns:minmax(300px,390px) minmax(0,1fr) 218px;gap:20px;align-items:start}
+      .workspace.editor-layout .editor{display:contents}
+      .workspace.editor-layout .editor>.panel-body:not(.hidden){grid-column:1;grid-row:1;min-width:0;background:#fff;border:1px solid #e8e8f1;border-radius:18px;box-shadow:0 12px 34px rgba(13,11,103,.055)}
+      .workspace.editor-layout .editor>.tabbar{grid-column:3;grid-row:1 / span 2;display:flex;flex-direction:column;align-items:stretch;gap:7px;padding:10px;background:#fff;border:1px solid #e8e8f1;border-radius:18px;box-shadow:0 12px 34px rgba(13,11,103,.055);position:sticky;top:108px}
+      .workspace.editor-layout .editor>.tabbar .tab{text-align:left;padding:13px 14px;min-height:44px}
+      .workspace.editor-layout .preview-area{grid-column:2;grid-row:1 / span 2;min-width:0}
+      .workspace.editor-layout .conditions-panel{grid-column:1;grid-row:2;position:static;max-height:none;overflow:visible}
+    }
     @media(max-width:850px){
       .workspace:not(.editor-layout) .editor{display:block}
       .workspace:not(.editor-layout) .editor>.tabbar{display:grid;position:static;border:0;border-bottom:1px solid #ecebf3;border-radius:0;box-shadow:none}
-      .workspace:not(.editor-layout) .editor>.panel-body:not(.hidden){border:0;border-radius:0;box-shadow:none}
+      .workspace:not(.editor-layout) .editor>.panel-body:not(.hidden),.workspace.editor-layout .editor>.panel-body:not(.hidden){border:0;border-radius:0;box-shadow:none}
     }
+    @media print{.paper{transform:none!important}.paper-stage{min-height:0!important}}
   </style>
 </head>
 <body>
@@ -2163,6 +2174,38 @@ Une fois le bon de commande signée la vente est définitive et le client a l'ob
     if(PUBLIC_FORM_TOKEN)void initPublicClientForm();
     else initAuth();
   })();
+  </script>
+  <script>
+    (() => {
+      const fitLivePaper = () => {
+        const stage = document.querySelector('.paper-stage');
+        const paper = document.getElementById('document');
+        if (!stage || !paper || !stage.clientWidth || !paper.offsetWidth) return;
+        const stageStyle = getComputedStyle(stage);
+        const horizontalPadding = parseFloat(stageStyle.paddingLeft || 0) + parseFloat(stageStyle.paddingRight || 0);
+        const availableWidth = Math.max(220, stage.clientWidth - horizontalPadding - 8);
+        const scale = Math.min(1, availableWidth / paper.offsetWidth);
+        paper.style.transformOrigin = 'top center';
+        paper.style.transform = `scale(${scale})`;
+        const verticalSpace = parseFloat(stageStyle.paddingTop || 0) + parseFloat(stageStyle.paddingBottom || 0) + 2;
+        stage.style.minHeight = `${Math.ceil(paper.offsetHeight * scale + verticalSpace)}px`;
+      };
+      const schedulePaperFit = () => window.requestAnimationFrame(fitLivePaper);
+      const initPaperFit = () => {
+        const stage = document.querySelector('.paper-stage');
+        const paper = document.getElementById('document');
+        if (!stage || !paper) return;
+        if ('ResizeObserver' in window) {
+          const observer = new ResizeObserver(schedulePaperFit);
+          observer.observe(stage);
+          observer.observe(paper);
+        }
+        window.addEventListener('resize', schedulePaperFit, {passive:true});
+        schedulePaperFit();
+      };
+      if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initPaperFit, {once:true});
+      else initPaperFit();
+    })();
   </script>
 </body>
 </html>

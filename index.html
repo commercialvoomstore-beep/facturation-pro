@@ -1586,7 +1586,7 @@ Une fois le bon de commande signée la vente est définitive et le client a l'ob
       if(String(record.status||'').toLowerCase()==='cancelled')return '<span class="archive-status cancelled">✕ Proforma annulée</span>';
       if(record.invoiceNumber)return `<span class="archive-status invoiced">✓ Facture ${esc(record.invoiceNumber)}</span>`;
       if(record.validationStatus==='validated')return '<span class="archive-status validated">✓ Proforma confirmée</span>';
-      if(isClientRequestRecord(record))return '<span class="archive-status pending">Proforma à compléter</span>';
+      if(isClientRequestRecord(record))return '<span class="archive-status pending">Proforma à valider</span>';
       return '<span class="archive-status pending">En attente de confirmation</span>';
     }
     function emailDeliveryMarkup(record){

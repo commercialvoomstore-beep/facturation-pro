@@ -332,6 +332,21 @@
       .workspace:not(.editor-layout) .editor>.panel-body:not(.hidden),.workspace.editor-layout .editor>.panel-body:not(.hidden){border:0;border-radius:0;box-shadow:none}
     }
     @media print{.paper{transform:none!important}.paper-stage{min-height:0!important}}
+
+    /* Navigation centrée et colonne de travail à gauche dans l’éditeur. */
+    @media(min-width:851px){
+      .workspace:not(.editor-layout){grid-template-columns:minmax(0,1fr);grid-template-areas:"navigation" "content";gap:20px}
+      .workspace:not(.editor-layout) .editor>.tabbar{grid-area:navigation;position:static;width:100%;max-width:980px;margin:0 auto;display:flex;flex-direction:row;justify-content:center;align-items:stretch;flex-wrap:wrap;gap:7px;padding:10px}
+      .workspace:not(.editor-layout) .editor>.tabbar .tab{flex:1 1 135px;max-width:170px;text-align:center;padding:12px 14px}
+      .workspace:not(.editor-layout) .editor>.panel-body:not(.hidden){grid-area:content}
+
+      .workspace.editor-layout{grid-template-columns:minmax(300px,390px) minmax(0,1fr);grid-template-areas:"navigation navigation" "editor preview" "conditions preview";gap:20px;align-items:start}
+      .workspace.editor-layout .editor>.tabbar{grid-area:navigation;position:static;width:100%;max-width:980px;margin:0 auto;display:flex;flex-direction:row;justify-content:center;align-items:stretch;flex-wrap:wrap;gap:7px;padding:10px}
+      .workspace.editor-layout .editor>.tabbar .tab{flex:1 1 135px;max-width:170px;text-align:center;padding:12px 14px}
+      .workspace.editor-layout .editor>.panel-body:not(.hidden){grid-area:editor}
+      .workspace.editor-layout .preview-area{grid-area:preview;grid-column:auto;grid-row:auto;min-width:0}
+      .workspace.editor-layout .conditions-panel{grid-area:conditions;grid-column:auto;grid-row:auto;position:static;max-height:none;overflow:visible}
+    }
   </style>
 </head>
 <body>

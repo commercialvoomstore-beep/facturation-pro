@@ -656,11 +656,17 @@ Dans le cadre d’une vente à un professionnel (organisme public ou privé) la 
 Dès signature d'un bon de commande, le client ne peut en aucun cas se rétracter (Aucun remboursement partiel ou total ne sera accepté quelque soit le motif)
 Le client ne peut en aucun cas se rétracter après le versement d’un acompte quelque soit le motif qui pourrait être évoqué.
 Une fois le bon de commande signée la vente est définitive et le client a l'obligation de régler la somme convenu.`;
-    const freshDraft=()=>({mode:'standard',clientCompany:'',clientContact:'',clientPhone:'',clientEmail:'',clientAddress:'',clientNcc:'',clientRcc:'',clientId:'',clientVisibility:{company:true,contact:true,phone:true,email:true,address:true,ncc:true,rcc:true},invoiceTitle:'',items:[makeItem()],turboClient:'',turboLabel:'',turboTtc:'',date:today(),validDays:15,issuePlace:'',docRef:'',deliveryDate:'',paymentDue:'',paymentMethod:'',deliveryTerms:DEFAULT_DELIVERY_TERMS,vatRate:18,note:DEFAULT_INVOICE_NOTE});
+    const freshDraft=()=>({mode:'standard',clientCompany:'',clientContact:'',clientPhone:'',clientEmail:'',clientAddress:'',clientNcc:'',clientRcc:'',clientId:'',clientVisibility:{company:true,contact:true,phone:true,email:true,address:true,ncc:true,rcc:true},invoiceTitle:'',items:[makeItem()],turboClient:'',turboLabel:'',turboTtc:'',date:today(),validDays:15,issuePlace:'',docRef:'',deliveryDate:'',paymentDue:'',paymentDueMode:'',paymentMethod:'',deliveryTerms:DEFAULT_DELIVERY_TERMS,vatRate:18,note:DEFAULT_INVOICE_NOTE});
     // Complète les anciens brouillons/archives sans effacer leurs données existantes.
     const normalizeDraft=data=>{
       const defaults=freshDraft();if(!data||typeof data!=='object')return defaults;
       const result={...defaults,...data,clientVisibility:{...defaults.clientVisibility,...(data.clientVisibility||{})},items:Array.isArray(data.items)&&data.items.length?data.items.map(item=>{const normalized={...makeItem(),...item};return {...normalized,unit:itemUnitInfo(normalized.unit).value}}):defaults.items};
+      const inferredPaymentDueMode=result.paymentDue==='at_order'?'at_order':result.paymentDue?'date':'';
+      const requestedPaymentDueMode=['','at_order','date'].includes(String(result.paymentDueMode||''))?String(result.paymentDueMode||''):'';
+      result.paymentDueMode=requestedPaymentDueMode||inferredPaymentDueMode;
+      if(result.paymentDueMode==='at_order')result.paymentDue='at_order';
+      if(result.paymentDueMode===''){result.paymentDue='';}
+      if(result.paymentDueMode==='date'&&result.paymentDue==='at_order')result.paymentDue='';
       result.deliveryTerms=String(result.deliveryTerms||'').replace(/^\s*>> Délais de livraison(?:\r?\n|\s)*/,'').replace(/\*\*/g,'').trim()||DEFAULT_DELIVERY_TERMS;
       result.note=String(result.note||'').replace(/^\s*Informations spécifiques\s*:(?:\r?\n|\s)*/,'').replace(/\*\*/g,'').trim()||DEFAULT_INVOICE_NOTE;
       // Les anciens modes de règlement retirés ne réapparaissent pas dans les archives.
@@ -1263,11 +1269,11 @@ Une fois le bon de commande signée la vente est définitive et le client a l'ob
     function switchTab(tab){activeTab=tab;$('#workspace').classList.toggle('editor-layout',tab==='editor');$('#conditionsPanel').classList.toggle('hidden',tab!=='editor');$$('.tab').forEach(el=>el.classList.toggle('active',el.dataset.tab===tab));['dashboard','editor','archive','clients','history','settings'].forEach(name=>$(`#${name}Panel`).classList.toggle('hidden',name!==tab));if(tab==='dashboard')renderDashboard();if(tab==='archive')renderArchive();if(tab==='clients'){renderClientDirectory();void refreshRemoteBusinessData()}if(tab==='history')renderHistory();if(tab==='settings')fillProfile()}
     function applyBrand(){// La palette de l'application reste Voomnet ; chaque facture garde sa couleur propre.
       $('#brandSelect').value=brand.id;$('#archiveBrand').textContent=brand.name;$('#settingsBrand').textContent=brand.name;renderAll()}
-    function paymentDueMode(){return draft.paymentDue==='at_order'?'at_order':draft.paymentDue?'date':''}
+    function paymentDueMode(){return draft.paymentDueMode|| (draft.paymentDue==='at_order'?'at_order':draft.paymentDue?'date':'')}
     function syncPaymentDueControls(){
       const mode=$('#paymentDueMode'),dateWrap=$('#paymentDueDateWrap'),dateInput=$('#paymentDueDate');
       if(!mode||!dateWrap||!dateInput)return;
-      const selected=paymentDueMode();mode.value=selected;dateWrap.classList.toggle('hidden',selected!=='date');dateInput.disabled=selected!=='date';dateInput.value=selected==='date'?draft.paymentDue:'';
+      const selected=paymentDueMode();mode.value=selected;dateWrap.classList.toggle('hidden',selected!=='date');dateInput.disabled=selected!=='date';dateInput.required=selected==='date';dateInput.value=selected==='date'?draft.paymentDue:'';
     }
     function fillFields(){ $$('[data-field]').forEach(input=>{input.value=draft[input.dataset.field]??''});$$('[data-mode]').forEach(el=>el.classList.toggle('active',el.dataset.mode===draft.mode));$('#standardFields').classList.toggle('hidden',draft.mode!=='standard');$('#turboFields').classList.toggle('hidden',draft.mode!=='turbo');$('#turboHint').style.display=draft.mode==='turbo'?'block':'none';$('#termsStep').textContent=draft.mode==='turbo'?'03':'04';$$('[data-client-visibility]').forEach(box=>box.checked=clientVisible(box.dataset.clientVisibility));syncPaymentDueControls();renderItems();renderClientPicker() }
     function renderItems(){
@@ -1622,7 +1628,7 @@ Une fois le bon de commande signée la vente est définitive et le client a l'ob
       if(Number(oldAmount)!==Number(newAmount))changes.push('montant TTC');
       if(previous.date!==current.date)changes.push('date d’émission');
       if(previous.mode!==current.mode||JSON.stringify(previous.items)!==JSON.stringify(current.items)||previous.turboLabel!==current.turboLabel)changes.push('lignes');
-      if(previous.paymentMethod!==current.paymentMethod||previous.paymentDue!==current.paymentDue)changes.push('règlement');
+      if(previous.paymentMethod!==current.paymentMethod||previous.paymentDue!==current.paymentDue||previous.paymentDueMode!==current.paymentDueMode)changes.push('règlement');
       return changes.length?`Changements : ${changes.join(', ')}`:'Enregistrement confirmé';
     }
     async function saveInvoice(){
@@ -1642,6 +1648,7 @@ Une fois le bon de commande signée la vente est définitive et le client a l'ob
         if(!filled.length||invalidLine){toast('Ajoutez au moins un article avec quantité, unité et prix HT valides.');return}
       }
       if(!/^\d{4}-\d{2}-\d{2}$/.test(draft.date)){toast('Choisissez une date d’émission valide.');return}
+      if(draft.paymentDueMode==='date'&&!/^\d{4}-\d{2}-\d{2}$/.test(draft.paymentDue||'')){toast('Choisissez une date précise de règlement.');syncPaymentDueControls();return}
       if([draft.deliveryDate,draft.paymentDue].some(date=>date&&date!=='at_order'&&(!/^\d{4}-\d{2}-\d{2}$/.test(date)||date<draft.date))){toast('Les dates de livraison et de règlement doivent suivre la date d’émission.');return}
       const existing=getRecord();
       if(String(existing?.status||'').toLowerCase()==='cancelled'){toast('Cette proforma est annulée et ne peut plus être modifiée. Dupliquez-la pour créer un nouveau document.');return}
@@ -1842,7 +1849,7 @@ Une fois le bon de commande signée la vente est définitive et le client a l'ob
     }
     async function handleArchive(event){
       const btn=event.target.closest('[data-action]');if(!btn)return;
-      const item=store.invoices.find(i=>i.id===btn.dataset.id&&i.brandId===brand.id);if(!item)return;
+      const item=store.invoices.find(i=>i.id===btn.dataset.id);if(!item)return;
       if(btn.dataset.action==='confirm-commercial'){await confirmCommercialAgreement(item);return}
       if(btn.dataset.action==='invoice'){await generateFinalInvoice(item);return}
       if(btn.dataset.action==='cancel'){await cancelProforma(item);return}
@@ -1872,11 +1879,12 @@ Une fois le bon de commande signée la vente est définitive et le client a l'ob
       }
       if(btn.dataset.action==='open'){openSavedInvoice(item);return}
       // Une duplication non enregistrée est seulement un brouillon, sans numéro ni journal de création.
+      if(brand.id!==item.brandId)switchBrand(item.brandId);
       currentId=null;draft=normalizeDraft(clone(item.data));draft.date=today();clearClientSaveNotice();syncDraft();renderAll();switchTab('editor');toast('Copie chargée en brouillon, nouveau numéro à l’enregistrement.');
     }
     function updateProfile(key,value){if(brand.id==='starlink'&&key==='color')return;const p=getProfile();p[key]=value;store.profiles[brand.id]={...p,_identityVersion:PROFILE_VERSION};persist();renderDocument();if(key==='color'){applyBrand();fillProfile()}}
     // Événements délégués : aucune perte du curseur pendant la mise à jour de l'aperçu.
-    document.addEventListener('input',event=>{const el=event.target;if(el.matches('[data-field]')){draft[el.dataset.field]=el.value;if(['clientCompany','clientContact','clientPhone','clientEmail','clientAddress','clientNcc','clientRcc'].includes(el.dataset.field)){clientSaveNotice='';clientSaveNoticeState='info';renderClientSaveControls()}if(el.dataset.field==='turboClient'&&draft.clientId){draft.clientId='';['clientCompany','clientContact','clientPhone','clientEmail','clientAddress','clientNcc','clientRcc'].forEach(key=>draft[key]='');renderClientPicker()}syncDraft();renderTotals();renderDocument()}else if(el.matches('[data-item-field]')){updateItemField(el)}else if(el.matches('[data-profile]')){updateProfile(el.dataset.profile,el.value)}});
+    document.addEventListener('input',event=>{const el=event.target;if(el.matches('[data-field]')){draft[el.dataset.field]=el.value;if(el.dataset.field==='paymentDue')draft.paymentDueMode='date';if(['clientCompany','clientContact','clientPhone','clientEmail','clientAddress','clientNcc','clientRcc'].includes(el.dataset.field)){clientSaveNotice='';clientSaveNoticeState='info';renderClientSaveControls()}if(el.dataset.field==='turboClient'&&draft.clientId){draft.clientId='';['clientCompany','clientContact','clientPhone','clientEmail','clientAddress','clientNcc','clientRcc'].forEach(key=>draft[key]='');renderClientPicker()}syncDraft();renderTotals();renderDocument()}else if(el.matches('[data-item-field]')){updateItemField(el)}else if(el.matches('[data-profile]')){updateProfile(el.dataset.profile,el.value)}});
     document.addEventListener('blur',event=>{const el=event.target;if(!el.matches('[data-field="deliveryTerms"],[data-field="note"]')||String(el.value||'').trim())return;const key=el.dataset.field;el.value=key==='deliveryTerms'?DEFAULT_DELIVERY_TERMS:DEFAULT_INVOICE_NOTE;draft[key]=el.value;syncDraft();renderDocument()},true);
     function updateItemField(el,rerender=false){
       const id=el.closest('[data-item-id]')?.dataset.itemId,item=draft.items.find(i=>i.id===id);
@@ -1916,6 +1924,7 @@ Une fois le bon de commande signée la vente est définitive et le client a l'ob
     $('#saveBtn').addEventListener('click',saveInvoice);$('#newBtn').addEventListener('click',newDraft);$('#archiveSearch').addEventListener('input',renderArchive);$('#archiveBrandFilter').addEventListener('change',renderArchive);$('#archiveList').addEventListener('click',handleArchive);
     $('#paymentDueMode').addEventListener('change',event=>{
       const value=event.target.value;
+      draft.paymentDueMode=value;
       draft.paymentDue=value==='at_order'?'at_order':value==='date'?(draft.paymentDue==='at_order'?'':draft.paymentDue):'';
       syncPaymentDueControls();syncDraft();renderDocument();
     });

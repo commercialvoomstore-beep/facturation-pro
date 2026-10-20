@@ -371,7 +371,7 @@
     @media(max-width:700px){.dashboard-filters{grid-template-columns:1fr 1fr}.dashboard-filter-field:first-child{grid-column:1/-1}.dashboard-reset{width:100%}}
       .archive-toolbar{align-items:end;flex-wrap:wrap}.archive-brand-filter{flex:0 1 260px;min-width:190px}.archive-search-field{display:block;flex:1 1 260px;min-width:220px}.archive-brand-filter .field-label,.archive-search-field .field-label{margin-bottom:6px}.archive-brand-label{display:inline-flex;align-items:center;border:1px solid #eadcf0;background:#faf5fc;color:var(--accent);border-radius:999px;padding:4px 8px;font-size:10px;font-weight:800}
     @media(max-width:600px){.archive-brand-filter,.archive-search-field{flex:1 1 100%;min-width:0}.archive-toolbar{display:grid;grid-template-columns:1fr}}
-      .confirm-modal{position:fixed;inset:0;z-index:200;display:grid;place-items:center;padding:20px}.confirm-modal-backdrop{position:absolute;inset:0;background:rgba(11,9,94,.28);backdrop-filter:blur(4px)}.confirm-modal-card{position:relative;width:min(460px,100%);background:#fff;border:1px solid #e4dced;border-radius:22px;padding:30px;box-shadow:0 24px 70px rgba(11,9,94,.22);text-align:left}.confirm-modal-close{position:absolute;top:12px;right:14px;border:0;background:transparent;color:#8b8495;font-size:24px;line-height:1;padding:3px 7px;border-radius:8px}.confirm-modal-close:hover{background:#f6f0f9;color:var(--accent)}.confirm-modal-icon{display:grid;place-items:center;width:42px;height:42px;border-radius:14px;background:var(--accent-tint);color:var(--accent);font-weight:900;font-size:20px;margin-bottom:16px}.confirm-modal-kicker{color:var(--accent);font-size:9px;font-weight:850;letter-spacing:.17em;margin-bottom:8px}.confirm-modal-card h2{margin:0;color:var(--accent-navy);font-size:22px;letter-spacing:-.045em}.confirm-modal-card p{margin:10px 0 0;color:#6d7182;font-size:13px;line-height:1.55}.confirm-modal-record{margin-top:16px;padding:11px 13px;border:1px solid #ece7f1;border-radius:11px;background:#fbf9fd;color:var(--accent-navy);font-size:12px;font-weight:800;overflow-wrap:anywhere}.confirm-modal-actions{display:flex;justify-content:flex-end;gap:9px;margin-top:24px}.confirm-modal-actions button{min-width:116px}.modal-open{overflow:hidden}@media(max-width:530px){.confirm-modal{padding:14px}.confirm-modal-card{padding:25px 20px 20px;border-radius:18px}.confirm-modal-actions{flex-direction:column-reverse}.confirm-modal-actions button{width:100%}}@media print{.confirm-modal{display:none!important}}
+      .confirm-modal{position:fixed;inset:0;z-index:200;display:grid;place-items:center;padding:20px}.confirm-modal-backdrop{position:absolute;inset:0;background:rgba(11,9,94,.28);backdrop-filter:blur(4px)}.confirm-modal-card{position:relative;width:min(460px,100%);max-height:calc(100vh - 28px);overflow:auto;background:#fff;border:1px solid #e4dced;border-radius:22px;padding:30px;box-shadow:0 24px 70px rgba(11,9,94,.22);text-align:left}.confirm-modal-close{position:absolute;top:12px;right:14px;border:0;background:transparent;color:#8b8495;font-size:24px;line-height:1;padding:3px 7px;border-radius:8px}.confirm-modal-close:hover{background:#f6f0f9;color:var(--accent)}.confirm-modal-icon{display:grid;place-items:center;width:42px;height:42px;border-radius:14px;background:var(--accent-tint);color:var(--accent);font-weight:900;font-size:20px;margin-bottom:16px}.confirm-modal-kicker{color:var(--accent);font-size:9px;font-weight:850;letter-spacing:.17em;margin-bottom:8px}.confirm-modal-card h2{margin:0;color:var(--ink);font-size:22px;letter-spacing:-.045em}.confirm-modal-card p{margin:10px 0 0;color:#6d7182;font-size:13px;line-height:1.55}.confirm-modal-record{margin-top:16px;padding:11px 13px;border:1px solid #ece7f1;border-radius:11px;background:#fbf9fd;color:var(--ink);font-size:12px;font-weight:800;overflow-wrap:anywhere}.confirm-modal-actions{display:flex;justify-content:flex-end;gap:9px;margin-top:24px}.confirm-modal-actions button{min-width:116px}.modal-open{overflow:hidden}@media(max-width:530px){.confirm-modal{padding:14px}.confirm-modal-card{padding:25px 20px 20px;border-radius:18px}.confirm-modal-actions{flex-direction:column-reverse}.confirm-modal-actions button{width:100%}}@media print{.confirm-modal{display:none!important}}
   </style>
 </head>
 <body>
@@ -508,8 +508,8 @@
     <div class="confirm-modal-backdrop" data-commercial-confirm-cancel></div>
     <section class="confirm-modal-card" role="document">
       <button type="button" class="confirm-modal-close" id="commercialConfirmClose" aria-label="Fermer">×</button>
-      <div class="confirm-modal-icon" aria-hidden="true">✓</div>
-      <div class="confirm-modal-kicker">VALIDATION COMMERCIALE</div>
+      <div id="commercialConfirmIcon" class="confirm-modal-icon" aria-hidden="true">✓</div>
+      <div id="commercialConfirmKicker" class="confirm-modal-kicker">VALIDATION COMMERCIALE</div>
       <h2 id="commercialConfirmTitle">Confirmer l’accord client&nbsp;?</h2>
       <p id="commercialConfirmDescription">Cette action valide la proforma, la commande et le paiement du client.</p>
       <div id="commercialConfirmRecord" class="confirm-modal-record"></div>
@@ -841,7 +841,8 @@ Une fois le bon de commande signée la vente est définitive et le client a l'ob
     let remoteClientFormRequests=[],remoteClientRequestsLoading=false,remoteClientRequestsError='',remoteClientRequestsLoadToken=0;
     let proformaEmailDeliveries=new Map(),invoiceEmailDeliveries=new Map();
     const pendingCommercialConfirmations=new Set();
-    let commercialConfirmationRecord=null,commercialConfirmationTrigger=null;
+    const pendingFinalInvoiceGenerations=new Set();
+    let commercialConfirmationRecord=null,commercialConfirmationTrigger=null,commercialConfirmationMode='commercial';
     const remoteBusinessReady=()=>Boolean(supabase&&currentUser&&remoteDataSource==='supabase'&&!remoteDataLoading);
     const remoteRecordReady=record=>Boolean(supabase&&currentUser&&record?.remote===true);
     const remoteWriteReady=record=>Boolean(remoteBusinessReady()||remoteRecordReady(record));
@@ -1628,13 +1629,15 @@ Une fois le bon de commande signée la vente est définitive et le client a l'ob
         const cancelled=String(i.status||'').toLowerCase()==='cancelled',valid=i.validationStatus==='validated',invoiceReady=invoiceGateReady(i),proformaReady=recordHasCompletePrices(i),emailDelivery=proformaEmailDeliveries.get(String(i.id)),emailSent=emailDelivery?.status==='sent'||emailDelivery?.hasSuccessful===true,hasProformaAttempt=Boolean(emailDelivery),proformaSending=emailDelivery?.status==='sending';
         const proformaEmailAction=!cancelled&&!i.invoiceNumber&&proformaReady?`<div class="archive-btns"><button type="button" class="mini-btn" data-action="${hasProformaAttempt?'proforma-resend':'proforma-email'}" data-id="${esc(i.id)}"${proformaSending?' disabled':''}>${proformaSending?'Envoi en cours…':hasProformaAttempt?'Renvoyer la proforma':'Envoyer la proforma'}</button></div>`:'';
         let commercialAction='';
-        const confirmationPending=pendingCommercialConfirmations.has(String(i.id));
+        const confirmationPending=pendingCommercialConfirmations.has(String(i.id)),invoiceGenerationPending=pendingFinalInvoiceGenerations.has(String(i.id));
         if(!cancelled&&!i.invoiceNumber&&emailSent){
           commercialAction=confirmationPending
             ? `<button type="button" class="mini-btn primary-btn" data-action="invoice" data-id="${esc(i.id)}" disabled aria-busy="true" title="Confirmation de l’accord en cours">Générer et envoyer la facture</button>`
-            : invoiceReady
-              ? `<button type="button" class="mini-btn primary-btn" data-action="invoice" data-id="${esc(i.id)}">Générer et envoyer la facture</button>`
-              : `<button type="button" class="mini-btn primary-btn" data-action="confirm-commercial" data-id="${esc(i.id)}">Confirmer l’accord client</button>`;
+            : invoiceGenerationPending
+              ? `<button type="button" class="mini-btn primary-btn" data-action="invoice" data-id="${esc(i.id)}" disabled aria-busy="true">Génération et envoi en cours…</button>`
+              : invoiceReady
+                ? `<button type="button" class="mini-btn primary-btn" data-action="invoice" data-id="${esc(i.id)}">Générer et envoyer la facture</button>`
+                : `<button type="button" class="mini-btn primary-btn" data-action="confirm-commercial" data-id="${esc(i.id)}">Confirmer l’accord client</button>`;
         }
         const cancelAction=!cancelled&&!i.invoiceNumber?`<button type="button" class="mini-btn danger" data-action="cancel" data-id="${esc(i.id)}">Annuler la proforma</button>`:'';
         const invoiceDelivery=i.invoiceId?invoiceEmailDeliveries.get(String(i.invoiceId)):null,invoiceSending=invoiceDelivery?.status==='sending';
@@ -1783,16 +1786,28 @@ Une fois le bon de commande signée la vente est définitive et le client a l'ob
       if(!modal)return;
       modal.classList.add('hidden');
       modal.setAttribute('aria-hidden','true');
+      modal.dataset.confirmationType='';
       document.body.classList.remove('modal-open');
       const trigger=commercialConfirmationTrigger;
-      commercialConfirmationRecord=null;commercialConfirmationTrigger=null;
+      commercialConfirmationRecord=null;commercialConfirmationTrigger=null;commercialConfirmationMode='commercial';
       if(restoreFocus&&trigger?.isConnected&&!trigger.disabled)trigger.focus();
     }
-    function openCommercialConfirmation(record,trigger){
+    function openCommercialConfirmation(record,trigger,mode='commercial'){
       const modal=$('#commercialConfirmModal');
       if(!modal)return;
-      commercialConfirmationRecord=record;commercialConfirmationTrigger=trigger||null;
-      $('#commercialConfirmRecord').textContent=[record.number,invoiceClient(record),BRANDS.find(site=>site.id===record.brandId)?.name||'Marque inconnue'].filter(Boolean).join(' · ');
+      const invoiceMode=mode==='invoice';
+      commercialConfirmationRecord=record;commercialConfirmationTrigger=trigger||null;commercialConfirmationMode=mode;
+      modal.dataset.confirmationType=mode;
+      $('#commercialConfirmIcon').textContent=invoiceMode?'↗':'✓';
+      $('#commercialConfirmKicker').textContent=invoiceMode?'ENVOI DE FACTURE':'VALIDATION COMMERCIALE';
+      $('#commercialConfirmTitle').textContent=invoiceMode?'Générer et envoyer la facture ?':'Confirmer l’accord client ?';
+      $('#commercialConfirmDescription').textContent=invoiceMode
+        ?'La facture définitive sera créée puis envoyée à l’adresse e-mail enregistrée pour ce client.'
+        :'Cette action valide la proforma, la commande et le paiement du client.';
+      $('#commercialConfirmRecord').textContent=invoiceMode
+        ?[record.number,invoiceClient(record),money(record.amount),record.data?.clientEmail].filter(Boolean).join(' · ')
+        :[record.number,invoiceClient(record),BRANDS.find(site=>site.id===record.brandId)?.name||'Marque inconnue'].filter(Boolean).join(' · ');
+      $('#commercialConfirmAccept').textContent=invoiceMode?'Générer et envoyer':'Confirmer';
       modal.classList.remove('hidden');
       modal.setAttribute('aria-hidden','false');
       document.body.classList.add('modal-open');
@@ -1814,6 +1829,16 @@ Une fois le bon de commande signée la vente est définitive et le client a l'ob
         pendingCommercialConfirmations.delete(key);
         renderArchive();
       }
+    }
+    async function executeConfirmationModal(){
+      const mode=commercialConfirmationMode,record=commercialConfirmationRecord;
+      if(mode==='invoice'){
+        if(!record){closeCommercialConfirmation(false);return}
+        closeCommercialConfirmation(false);
+        await executeFinalInvoiceGeneration(record);
+        return;
+      }
+      await executeCommercialConfirmation();
     }
     function confirmCommercialAgreement(record,trigger){
       const key=String(record?.id||'');
@@ -1869,12 +1894,13 @@ Une fois le bon de commande signée la vente est définitive et le client a l'ob
       if(fallback.error&&String(fallback.error.code||'')!=='PGRST116')throw fallback.error;
       return fallback.data||null;
     }
-    async function generateFinalInvoice(record){
-      if(!invoiceGateReady(record)){toast('Confirmez l’accord client avant de générer la facture.');return}
-      if(!remoteWriteReady(record)){toast('La connexion Supabase est nécessaire pour générer la facture.');return}
-      if(!/^\S+@\S+\.\S+$/.test(String(record.data?.clientEmail||'').trim())){toast('Renseignez une adresse e-mail client valide avant de générer la facture.');openSavedInvoice(record);return}
-      if(!confirm('Générer la facture définitive et l’envoyer par e-mail au client ?'))return;
+    async function executeFinalInvoiceGeneration(record){
+      const key=String(record?.id||'');
+      if(!key||pendingFinalInvoiceGenerations.has(key))return;
+      pendingFinalInvoiceGenerations.add(key);
+      renderArchive();
       try{
+        if(!remoteWriteReady(record))throw new Error('La connexion Supabase est nécessaire pour générer la facture.');
         let invoice=await findFinalInvoiceForProforma(record);
         if(!invoice){
           const selectedBrand=BRANDS.find(item=>item.id===record.brandId)||brand;
@@ -1902,12 +1928,24 @@ Une fois le bon de commande signée la vente est définitive et le client a l'ob
         if(emailResult?.ok)toast(`Facture définitive ${invoice.number} générée et envoyée à ${record.data.clientEmail}.`);
         else toast(`Facture ${invoice.number} conservée, mais l’e-mail n’a pas été envoyé : ${emailResult?.error||'configuration à vérifier'}. Vous pouvez la renvoyer.`);
       }catch(error){console.error('Génération de facture impossible',error);toast('Facture impossible : '+remoteErrorText(error))}
+      finally{
+        pendingFinalInvoiceGenerations.delete(key);
+        renderArchive();
+      }
+    }
+    async function generateFinalInvoice(record,trigger){
+      const key=String(record?.id||'');
+      if(!key||pendingFinalInvoiceGenerations.has(key))return;
+      if(!invoiceGateReady(record)){toast('Confirmez l’accord client avant de générer la facture.');return}
+      if(!remoteWriteReady(record)){toast('La connexion Supabase est nécessaire pour générer la facture.');return}
+      if(!/^\S+@\S+\.\S+$/.test(String(record.data?.clientEmail||'').trim())){toast('Renseignez une adresse e-mail client valide avant de générer la facture.');openSavedInvoice(record);return}
+      openCommercialConfirmation(record,trigger,'invoice');
     }
     async function handleArchive(event){
       const btn=event.target.closest('[data-action]');if(!btn)return;
       const item=store.invoices.find(i=>i.id===btn.dataset.id);if(!item)return;
       if(btn.dataset.action==='confirm-commercial'){confirmCommercialAgreement(item,btn);return}
-      if(btn.dataset.action==='invoice'){await generateFinalInvoice(item);return}
+      if(btn.dataset.action==='invoice'){await generateFinalInvoice(item,btn);return}
       if(btn.dataset.action==='cancel'){await cancelProforma(item);return}
       if(btn.dataset.action==='proforma-email'||btn.dataset.action==='proforma-resend'){
         const resend=btn.dataset.action==='proforma-resend';
@@ -2349,7 +2387,7 @@ Une fois le bon de commande signée la vente est définitive et le client a l'ob
     $('#logoutBtn').addEventListener('click',async ()=>{if(!supabase)return;await supabase.auth.signOut();applySession(null)});
     $('#commercialConfirmCancel').addEventListener('click',()=>closeCommercialConfirmation());
     $('#commercialConfirmClose').addEventListener('click',()=>closeCommercialConfirmation());
-    $('#commercialConfirmAccept').addEventListener('click',()=>{void executeCommercialConfirmation()});
+    $('#commercialConfirmAccept').addEventListener('click',()=>{void executeConfirmationModal()});
     $('#commercialConfirmModal').addEventListener('click',event=>{if(event.target.matches('[data-commercial-confirm-cancel]'))closeCommercialConfirmation()});
     document.addEventListener('keydown',event=>{if(event.key==='Escape'&&!$('#commercialConfirmModal').classList.contains('hidden'))closeCommercialConfirmation()});
     if(PUBLIC_FORM_TOKEN)void initPublicClientForm();

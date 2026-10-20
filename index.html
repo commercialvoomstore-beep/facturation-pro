@@ -823,6 +823,7 @@ Une fois le bon de commande signée la vente est définitive et le client a l'ob
     const safeIso=value=>{const time=Date.parse(value||'');return Number.isFinite(time)?new Date(time).toISOString():new Date().toISOString()};
     let remoteClientFormRequests=[],remoteClientRequestsLoading=false,remoteClientRequestsError='',remoteClientRequestsLoadToken=0;
     let proformaEmailDeliveries=new Map(),invoiceEmailDeliveries=new Map();
+    const pendingCommercialConfirmations=new Set();
     const remoteBusinessReady=()=>Boolean(supabase&&currentUser&&remoteDataSource==='supabase'&&!remoteDataLoading);
     const remoteRecordReady=record=>Boolean(supabase&&currentUser&&record?.remote===true);
     const remoteWriteReady=record=>Boolean(remoteBusinessReady()||remoteRecordReady(record));
@@ -1609,10 +1610,13 @@ Une fois le bon de commande signée la vente est définitive et le client a l'ob
         const cancelled=String(i.status||'').toLowerCase()==='cancelled',valid=i.validationStatus==='validated',invoiceReady=invoiceGateReady(i),proformaReady=recordHasCompletePrices(i),emailDelivery=proformaEmailDeliveries.get(String(i.id)),emailSent=emailDelivery?.status==='sent'||emailDelivery?.hasSuccessful===true,hasProformaAttempt=Boolean(emailDelivery),proformaSending=emailDelivery?.status==='sending';
         const proformaEmailAction=!cancelled&&!i.invoiceNumber&&proformaReady?`<div class="archive-btns"><button type="button" class="mini-btn" data-action="${hasProformaAttempt?'proforma-resend':'proforma-email'}" data-id="${esc(i.id)}"${proformaSending?' disabled':''}>${proformaSending?'Envoi en cours…':hasProformaAttempt?'Renvoyer la proforma':'Envoyer la proforma'}</button></div>`:'';
         let commercialAction='';
+        const confirmationPending=pendingCommercialConfirmations.has(String(i.id));
         if(!cancelled&&!i.invoiceNumber&&emailSent){
-          commercialAction=invoiceReady
-            ? `<button type="button" class="mini-btn primary-btn" data-action="invoice" data-id="${esc(i.id)}">Générer et envoyer la facture</button>`
-            : `<button type="button" class="mini-btn primary-btn" data-action="confirm-commercial" data-id="${esc(i.id)}">Confirmer l’accord client</button>`;
+          commercialAction=confirmationPending
+            ? `<button type="button" class="mini-btn primary-btn" data-action="invoice" data-id="${esc(i.id)}" disabled aria-busy="true" title="Confirmation de l’accord en cours">Générer et envoyer la facture</button>`
+            : invoiceReady
+              ? `<button type="button" class="mini-btn primary-btn" data-action="invoice" data-id="${esc(i.id)}">Générer et envoyer la facture</button>`
+              : `<button type="button" class="mini-btn primary-btn" data-action="confirm-commercial" data-id="${esc(i.id)}">Confirmer l’accord client</button>`;
         }
         const cancelAction=!cancelled&&!i.invoiceNumber?`<button type="button" class="mini-btn danger" data-action="cancel" data-id="${esc(i.id)}">Annuler la proforma</button>`:'';
         const invoiceDelivery=i.invoiceId?invoiceEmailDeliveries.get(String(i.invoiceId)):null,invoiceSending=invoiceDelivery?.status==='sending';
@@ -1757,15 +1761,24 @@ Une fois le bon de commande signée la vente est définitive et le client a l'ob
       persist();renderArchive();refreshActivityViews();return updated;
     }
     async function confirmCommercialAgreement(record){
+      const key=String(record?.id||'');
+      if(!key||pendingCommercialConfirmations.has(key))return;
       if(String(record.status||'').toLowerCase()==='cancelled'){toast('Cette proforma est annulée et ne peut plus être confirmée.');return}
       if(record.validationStatus==='validated'&&record.orderConfirmedAt&&record.paymentReceivedAt){toast('L’accord client est déjà confirmé.');return}
       if(!recordHasCompletePrices(record)){toast('Ouvrez la proforma, complétez les prix HT, puis enregistrez-la avant de la confirmer.');openSavedInvoice(record);return}
       if(!confirm('Confirmer simultanément la validation de la proforma, la commande et le paiement du client ?'))return;
+      pendingCommercialConfirmations.add(key);
+      renderArchive();
       try{
         const confirmedAt=new Date().toISOString();
-        await persistClientFormRecord(record,{status:'confirmed',validationStatus:'validated',validatedAt:confirmedAt,validatedBy:currentUser?.id||'',orderConfirmedAt:confirmedAt,paymentReceivedAt:confirmedAt},'invoice.validated','Accord client confirmé : validation, commande et paiement enregistrés simultanément.');
+        const updated=await persistClientFormRecord(record,{status:'confirmed',validationStatus:'validated',validatedAt:confirmedAt,validatedBy:currentUser?.id||'',orderConfirmedAt:confirmedAt,paymentReceivedAt:confirmedAt},'invoice.validated','Accord client confirmé : validation, commande et paiement enregistrés simultanément.');
+        if(!updated)throw new Error('La confirmation n’a pas pu être enregistrée.');
         toast('Accord client confirmé. Validation, commande et paiement sont enregistrés : la facture est prête.');
       }catch(error){console.error('Confirmation globale impossible',error);toast('Confirmation impossible : '+remoteErrorText(error))}
+      finally{
+        pendingCommercialConfirmations.delete(key);
+        renderArchive();
+      }
     }
     async function cancelProforma(record){
       if(String(record.status||'').toLowerCase()==='cancelled'){toast('Cette proforma est déjà annulée.');return}

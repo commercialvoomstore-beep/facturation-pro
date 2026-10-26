@@ -11,6 +11,12 @@ const BRAND_DESIGNS = {
     tableBg: '#eaf2fa', tableText: '#35547d', rowBorder: '#dfebf5', paymentBg: '#f1f5fb',
     totalBg: 'accent', totalText: '#ffffff', top: 'accent', titleStyle: 'card'
   },
+  voomnettech: {
+    name: 'Voomnet Technology', edition: 'TECHNOLOGY & SERVICES', domain: 'voomnettechnology.ci',
+    accent: '#32106f', kicker: '#32106f', title: '#24105e', titleBg: '#f7f3fb',
+    tableBg: '#eee8f7', tableText: '#32106f', rowBorder: '#ded4eb', paymentBg: '#f7f3fb',
+    totalBg: 'accent', totalText: '#ffffff', top: 'accent', titleStyle: 'card'
+  },
   maginfo: {
     name: 'Magasin Informatique', edition: 'SOLUTIONS INFORMATIQUES', domain: 'magasininformatique.ci',
     accent: '#c72136', kicker: '#e87380', title: '#ffffff', titleBg: '#18283d',
@@ -70,6 +76,7 @@ const BRAND_DESIGNS = {
 
 const DEFAULT_LOGO_FILES = {
   voom: path.join(__dirname, 'assets', 'brand-voom.jpg'),
+  voomnettech: path.join(__dirname, 'assets', 'brand-voomnettech.png'),
   maginfo: path.join(__dirname, 'assets', 'brand-maginfo.jpg'),
   onduleurs: path.join(__dirname, 'assets', 'brand-onduleurs.jpg'),
   licences: path.join(__dirname, 'assets', 'brand-licences.jpg'),
@@ -82,6 +89,7 @@ const DEFAULT_LOGO_FILES = {
 
 const DEFAULT_IDENTITIES = {
   voom: { company: 'Voomstore', address: 'Cocody Angré Star 14, Abidjan, Côte d’Ivoire', phone: '+225 27 22 28 81 88', whatsapp: '+225 07 19 19 19 10', email: 'contact@voomstore.ci' },
+  voomnettech: { company: 'Voomnet Technology', address: '', phone: '', whatsapp: '', email: 'contact@voomnettechnology.ci' },
   maginfo: { company: 'Magasin Informatique Côte d’Ivoire', address: 'Cocody Angré Star 14, 9e tranche, Bâtiment Voomstore, Abidjan, Côte d’Ivoire', phone: '+225 07 19 19 19 31', whatsapp: '+225 07 19 19 19 31', email: 'contact@magasininformatique.ci' },
   onduleurs: { company: 'Onduleurs.ci', address: 'Cocody Angré Star 14, Abidjan, Côte d’Ivoire', phone: '+225 05 01 68 34 34', whatsapp: '+225 05 01 68 34 34', email: 'contact@onduleurs.ci' },
   licences: { company: 'LICENCES.CI', address: 'Abidjan, Cocody Angré Star 14, Côte d’Ivoire', phone: '+225 05 01 69 01 01', whatsapp: '+225 05 01 69 01 01', email: 'contact@licences.ci' },

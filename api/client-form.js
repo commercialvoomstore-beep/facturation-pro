@@ -2,6 +2,7 @@ const crypto = require('node:crypto');
 
 const BRAND_NAMES = {
   voom: 'Voomstore',
+  voomnettech: 'Voomnet Technology',
   maginfo: 'Magasin Informatique',
   onduleurs: 'Onduleurs',
   licences: 'Licences',
@@ -180,7 +181,7 @@ function validateSubmission(data) {
 }
 
 function brandCode(brandId) {
-  return ({ voom: 'VOOM', maginfo: 'MAGINF', onduleurs: 'ONDUL', licences: 'LIC', groupes: 'GE', legrand: 'LEGR', starlink: 'STAR', entreprise: 'ENTINF', cabinetvf: 'CABVF' })[brandId] || String(brandId).slice(0, 5).toUpperCase();
+  return ({ voom: 'VOOM', voomnettech: 'VNT', maginfo: 'MAGINF', onduleurs: 'ONDUL', licences: 'LIC', groupes: 'GE', legrand: 'LEGR', starlink: 'STAR', entreprise: 'ENTINF', cabinetvf: 'CABVF' })[brandId] || String(brandId).slice(0, 5).toUpperCase();
 }
 
 function profileForDocument(snapshot) {

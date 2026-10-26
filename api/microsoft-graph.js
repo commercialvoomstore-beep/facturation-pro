@@ -4,6 +4,7 @@
 // index.html and never expose its tenant, client secret or access token to a browser.
 const BRAND_NAMES = {
   voom: 'Voomstore',
+  voomnettech: 'Voomnet Technology',
   maginfo: 'Magasin Informatique',
   onduleurs: 'Onduleurs',
   licences: 'Licences',
@@ -16,6 +17,7 @@ const BRAND_NAMES = {
 
 const BRAND_ENV_KEYS = {
   voom: 'VOOM',
+  voomnettech: 'VOOMNETTECH',
   maginfo: 'MAGINFO',
   onduleurs: 'ONDULEURS',
   licences: 'LICENCES',
